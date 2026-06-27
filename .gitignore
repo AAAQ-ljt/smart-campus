@@ -1,0 +1,131 @@
+# ===================================
+# IDE - IntelliJ IDEA
+# ===================================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ===================================
+# IDE - VS Code
+# ===================================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ===================================
+# IDE - Eclipse / STS
+# ===================================
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# ===================================
+# IDE - NetBeans
+# ===================================
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# ===================================
+# OS
+# ===================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ===================================
+# Java / Maven
+# ===================================
+target/
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# Maven wrapper
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# ===================================
+# Spring Boot
+# ===================================
+.apt_generated/
+
+# ===================================
+# Logs
+# ===================================
+logs/
+*.log
+*.log.*
+
+# ===================================
+# Frontend - Node / Vue / Vite
+# ===================================
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+.eslintcache
+
+# Vite
+*.timestamp-*-*.mjs
+
+# ===================================
+# Test / Coverage
+# ===================================
+coverage/
+__screenshots__/
+
+# Cypress
+/cypress/videos/
+/cypress/screenshots/
+
+# ===================================
+# Environment & Config
+# ===================================
+.env
+.env.local
+.env.*.local
+*.env
+!*.env.example
+
+# ===================================
+# Temp / Cache
+# ===================================
+*.tmp
+*.temp
+.cache/
+.tmp/
+
+# ===================================
+# Package manager locks (keep for reproducibility)
+# ===================================
+# pnpm-lock.yaml  # keep tracked
+# yarn.lock       # keep tracked
+# package-lock.json  # keep tracked
+
+# ===================================
+# Editor backup files
+# ===================================
+*~
+*.swp
+*.swo
+*.bak
+*.orig
