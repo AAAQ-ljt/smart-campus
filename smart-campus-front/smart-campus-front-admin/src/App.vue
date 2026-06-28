@@ -281,14 +281,10 @@ function handleSecondaryClick(item) {
   font-weight: 500;
 }
 
-/* ===== 右侧内容卡片 ===== */
+/* ===== 右侧内容区域 ===== */
 .content-card {
   flex: 1;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  padding: 20px;
-  overflow-y: auto;
+  overflow: hidden;
   min-width: 0;
 }
 </style>
