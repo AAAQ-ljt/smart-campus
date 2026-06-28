@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smart.campus.mappers.PaperQuestionMapper">
+
+	<!--实体映射-->
+	<resultMap id="base_result_map" type="com.smart.campus.entity.po.PaperQuestion">
+		<!--关联ID（UUID）-->
+		<result column="paper_question_id" property="paperQuestionId"  />
+		<!--父ID-->
+		<result column="parent_paper_question_id" property="parentPaperQuestionId"  />
+		<!--分组名称-->
+		<result column="group_name" property="groupName"  />
+		<!--试卷ID-->
+		<result column="paper_id" property="paperId"  />
+		<!--习题ID-->
+		<result column="question_id" property="questionId"  />
+		<!--该题分值（可覆盖习题默认分值）-->
+		<result column="score" property="score"  />
+		<!--题目排序-->
+		<result column="sort_order" property="sortOrder"  />
+		<!--创建时间-->
+		<result column="create_time" property="createTime"  />
+	</resultMap>
+
+
+	<!-- 通用查询结果列-->
+	<sql id="base_column_list">
+		 p.paper_question_id,p.parent_paper_question_id,p.group_name,p.paper_id,p.question_id,
+		 p.score,p.sort_order,p.create_time
+	</sql>
+
+	<sql id="base_condition_filed">
+			<if test="query.paperQuestionId != null and query.paperQuestionId!=''">
+				 and  p.paper_question_id = #{query.paperQuestionId}
+			</if>
+			<if test="query.parentPaperQuestionId != null and query.parentPaperQuestionId!=''">
+				 and  p.parent_paper_question_id = #{query.parentPaperQuestionId}
+			</if>
+			<if test="query.groupName != null and query.groupName!=''">
+				 and  p.group_name = #{query.groupName}
+			</if>
+			<if test="query.paperId != null and query.paperId!=''">
+				 and  p.paper_id = #{query.paperId}
+			</if>
+			<if test="query.questionId != null and query.questionId!=''">
+				 and  p.question_id = #{query.questionId}
+			</if>
+			<if test="query.score != null">
+				 and  p.score = #{query.score}
+			</if>
+			<if test="query.sortOrder != null">
+				 and  p.sort_order = #{query.sortOrder}
+			</if>
+			<if test="query.createTime != null and query.createTime!=''">
+				 <![CDATA[ and  p.create_time=str_to_date(#{query.createTime}, '%Y-%m-%d') ]]>
+			</if>
+	</sql>
+
+	<!-- 通用查询条件列-->
+	<sql id="query_condition">
+	 <where>
+			<include refid="base_condition_filed" />
+			<if test="query.paperQuestionIdFuzzy!= null  and query.paperQuestionIdFuzzy!=''">
+				 and  p.paper_question_id like concat('%', #{query.paperQuestionIdFuzzy}, '%')
+			</if>
+			<if test="query.parentPaperQuestionIdFuzzy!= null  and query.parentPaperQuestionIdFuzzy!=''">
+				 and  p.parent_paper_question_id like concat('%', #{query.parentPaperQuestionIdFuzzy}, '%')
+			</if>
+			<if test="query.groupNameFuzzy!= null  and query.groupNameFuzzy!=''">
+				 and  p.group_name like concat('%', #{query.groupNameFuzzy}, '%')
+			</if>
+			<if test="query.paperIdFuzzy!= null  and query.paperIdFuzzy!=''">
+				 and  p.paper_id like concat('%', #{query.paperIdFuzzy}, '%')
+			</if>
+			<if test="query.questionIdFuzzy!= null  and query.questionIdFuzzy!=''">
+				 and  p.question_id like concat('%', #{query.questionIdFuzzy}, '%')
+			</if>
+			<if test="query.createTimeStart!= null and query.createTimeStart!=''">
+				 <![CDATA[ and  p.create_time>=str_to_date(#{query.createTimeStart}, '%Y-%m-%d') ]]>
+			</if>
+			<if test="query.createTimeEnd!= null and query.createTimeEnd!=''">
+				 <![CDATA[ and  p.create_time< date_sub(str_to_date(#{query.createTimeEnd},'%Y-%m-%d'),interval -1 day) ]]>
+			</if>
+	 </where>
+	</sql>
+
+	<!-- 查询集合-->
+	<select id="selectList" resultMap="base_result_map" >
+		 SELECT <include refid="base_column_list" /> FROM paper_question p <include refid="query_condition" />
+		 <if test="query.orderBy!=null">
+			 order by ${query.orderBy}
+		 </if>
+		 <if test="query.simplePage!=null">
+			 limit #{query.simplePage.start},#{query.simplePage.end}
+		 </if>
+	</select>
+
+	<!-- 查询数量-->
+	<select id="selectCount" resultType="java.lang.Integer" >
+		 SELECT count(1) FROM paper_question p <include refid="query_condition" />
+	</select>
+
+	<!-- 插入 （匹配有值的字段）-->
+	<insert id="insert" parameterType="com.smart.campus.entity.po.PaperQuestion">
+		 INSERT INTO paper_question
+		 <trim prefix="(" suffix=")" suffixOverrides="," >
+			<if test="bean.paperQuestionId != null">
+				 paper_question_id,
+			</if>
+			<if test="bean.parentPaperQuestionId != null">
+				 parent_paper_question_id,
+			</if>
+			<if test="bean.groupName != null">
+				 group_name,
+			</if>
+			<if test="bean.paperId != null">
+				 paper_id,
+			</if>
+			<if test="bean.questionId != null">
+				 question_id,
+			</if>
+			<if test="bean.score != null">
+				 score,
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order,
+			</if>
+			<if test="bean.createTime != null">
+				 create_time,
+			</if>
+		 </trim>
+		 <trim prefix="values (" suffix=")" suffixOverrides="," >
+			<if test="bean.paperQuestionId!=null">
+				 #{bean.paperQuestionId},
+			</if>
+			<if test="bean.parentPaperQuestionId!=null">
+				 #{bean.parentPaperQuestionId},
+			</if>
+			<if test="bean.groupName!=null">
+				 #{bean.groupName},
+			</if>
+			<if test="bean.paperId!=null">
+				 #{bean.paperId},
+			</if>
+			<if test="bean.questionId!=null">
+				 #{bean.questionId},
+			</if>
+			<if test="bean.score!=null">
+				 #{bean.score},
+			</if>
+			<if test="bean.sortOrder!=null">
+				 #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime!=null">
+				 #{bean.createTime},
+			</if>
+		 </trim>
+	</insert>
+
+	<!-- 插入或者更新 （匹配有值的字段）-->
+	<insert id="insertOrUpdate" parameterType="com.smart.campus.entity.po.PaperQuestion">
+		 INSERT INTO paper_question
+		 <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="bean.paperQuestionId != null">
+				 paper_question_id,
+			</if>
+			<if test="bean.parentPaperQuestionId != null">
+				 parent_paper_question_id,
+			</if>
+			<if test="bean.groupName != null">
+				 group_name,
+			</if>
+			<if test="bean.paperId != null">
+				 paper_id,
+			</if>
+			<if test="bean.questionId != null">
+				 question_id,
+			</if>
+			<if test="bean.score != null">
+				 score,
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order,
+			</if>
+			<if test="bean.createTime != null">
+				 create_time,
+			</if>
+		 </trim>
+		 <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="bean.paperQuestionId!=null">
+				 #{bean.paperQuestionId},
+			</if>
+			<if test="bean.parentPaperQuestionId!=null">
+				 #{bean.parentPaperQuestionId},
+			</if>
+			<if test="bean.groupName!=null">
+				 #{bean.groupName},
+			</if>
+			<if test="bean.paperId!=null">
+				 #{bean.paperId},
+			</if>
+			<if test="bean.questionId!=null">
+				 #{bean.questionId},
+			</if>
+			<if test="bean.score!=null">
+				 #{bean.score},
+			</if>
+			<if test="bean.sortOrder!=null">
+				 #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime!=null">
+				 #{bean.createTime},
+			</if>
+		 </trim>
+		 on DUPLICATE key update 
+		 <trim prefix="" suffix="" suffixOverrides=",">
+			<if test="bean.paperQuestionId!=null">
+				 paper_question_id = VALUES(paper_question_id),
+			</if>
+			<if test="bean.parentPaperQuestionId!=null">
+				 parent_paper_question_id = VALUES(parent_paper_question_id),
+			</if>
+			<if test="bean.groupName!=null">
+				 group_name = VALUES(group_name),
+			</if>
+			<if test="bean.paperId!=null">
+				 paper_id = VALUES(paper_id),
+			</if>
+			<if test="bean.questionId!=null">
+				 question_id = VALUES(question_id),
+			</if>
+			<if test="bean.score!=null">
+				 score = VALUES(score),
+			</if>
+			<if test="bean.sortOrder!=null">
+				 sort_order = VALUES(sort_order),
+			</if>
+			<if test="bean.createTime!=null">
+				 create_time = VALUES(create_time),
+			</if>
+		 </trim>
+	</insert>
+
+	<!-- 添加 （批量插入）-->
+	<insert id="insertBatch" parameterType="com.smart.campus.entity.po.PaperQuestion">
+		 INSERT INTO paper_question(
+			 paper_question_id,
+			 parent_paper_question_id,
+			 group_name,
+			 paper_id,
+			 question_id,
+			 score,
+			 sort_order,
+			 create_time
+		 )values
+		 <foreach collection="list" item="item" separator=",">
+			 (
+				 #{item.paperQuestionId},
+				 #{item.parentPaperQuestionId},
+				 #{item.groupName},
+				 #{item.paperId},
+				 #{item.questionId},
+				 #{item.score},
+				 #{item.sortOrder},
+				 #{item.createTime}
+			 )
+		 </foreach>
+	</insert>
+
+	<!-- 批量新增修改 （批量插入）-->
+	<insert id="insertOrUpdateBatch" parameterType="com.smart.campus.entity.po.PaperQuestion">
+		 INSERT INTO paper_question(
+			 paper_question_id,
+			 parent_paper_question_id,
+			 group_name,
+			 paper_id,
+			 question_id,
+			 score,
+			 sort_order,
+			 create_time
+		 )values
+		 <foreach collection="list" item="item" separator=",">
+			 (
+				 #{item.paperQuestionId},
+				 #{item.parentPaperQuestionId},
+				 #{item.groupName},
+				 #{item.paperId},
+				 #{item.questionId},
+				 #{item.score},
+				 #{item.sortOrder},
+				 #{item.createTime}
+			 )
+		 </foreach>
+			on DUPLICATE key update 
+			paper_question_id = VALUES(paper_question_id),
+			parent_paper_question_id = VALUES(parent_paper_question_id),
+			group_name = VALUES(group_name),
+			paper_id = VALUES(paper_id),
+			question_id = VALUES(question_id),
+			score = VALUES(score),
+			sort_order = VALUES(sort_order),
+			create_time = VALUES(create_time)
+	</insert>
+
+	<!--多条件修改-->
+	<update id="updateByParam" parameterType="com.smart.campus.entity.query.PaperQuestionQuery">
+		 UPDATE paper_question p
+ 		 <set> 
+			<if test="bean.paperQuestionId != null">
+				 paper_question_id = #{bean.paperQuestionId},
+			</if>
+			<if test="bean.parentPaperQuestionId != null">
+				 parent_paper_question_id = #{bean.parentPaperQuestionId},
+			</if>
+			<if test="bean.groupName != null">
+				 group_name = #{bean.groupName},
+			</if>
+			<if test="bean.paperId != null">
+				 paper_id = #{bean.paperId},
+			</if>
+			<if test="bean.questionId != null">
+				 question_id = #{bean.questionId},
+			</if>
+			<if test="bean.score != null">
+				 score = #{bean.score},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 <include refid="query_condition" />
+	</update>
+
+	<!--多条件删除-->
+	<delete id="deleteByParam">
+		 delete p from paper_question p
+ 		 <include refid="query_condition" />
+	</delete>
+
+	<!-- 根据PaperQuestionId修改-->
+	<update id="updateByPaperQuestionId" parameterType="com.smart.campus.entity.po.PaperQuestion">
+		 UPDATE paper_question
+ 		 <set> 
+			<if test="bean.parentPaperQuestionId != null">
+				 parent_paper_question_id = #{bean.parentPaperQuestionId},
+			</if>
+			<if test="bean.groupName != null">
+				 group_name = #{bean.groupName},
+			</if>
+			<if test="bean.paperId != null">
+				 paper_id = #{bean.paperId},
+			</if>
+			<if test="bean.questionId != null">
+				 question_id = #{bean.questionId},
+			</if>
+			<if test="bean.score != null">
+				 score = #{bean.score},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 where paper_question_id=#{paperQuestionId}
+	</update>
+
+	<!-- 根据PaperQuestionId删除-->
+	<delete id="deleteByPaperQuestionId">
+		delete from paper_question where paper_question_id=#{paperQuestionId}
+	</delete>
+
+	<!-- 根据PrimaryKey获取对象-->
+	<select id="selectByPaperQuestionId" resultMap="base_result_map" >
+		select <include refid="base_column_list" /> from paper_question p where paper_question_id=#{paperQuestionId}
+	</select>
+
+</mapper>

@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smart.campus.mappers.FacultyInfoMapper">
+
+	<!--实体映射-->
+	<resultMap id="base_result_map" type="com.smart.campus.entity.po.FacultyInfo">
+		<!---->
+		<id column="faculty_id" property="facultyId"  />
+		<!--院系名称-->
+		<result column="faculty_name" property="facultyName"  />
+		<!--院系编码（唯一）-->
+		<result column="faculty_code" property="facultyCode"  />
+		<!--院系描述-->
+		<result column="description" property="description"  />
+		<!--排序权重-->
+		<result column="sort_order" property="sortOrder"  />
+		<!--创建时间-->
+		<result column="create_time" property="createTime"  />
+	</resultMap>
+
+
+	<!-- 通用查询结果列-->
+	<sql id="base_column_list">
+		 f.faculty_id,f.faculty_name,f.faculty_code,f.description,f.sort_order,
+		 f.create_time
+	</sql>
+
+	<sql id="base_condition_filed">
+			<if test="query.facultyId != null">
+				 and  f.faculty_id = #{query.facultyId}
+			</if>
+			<if test="query.facultyName != null and query.facultyName!=''">
+				 and  f.faculty_name = #{query.facultyName}
+			</if>
+			<if test="query.facultyCode != null and query.facultyCode!=''">
+				 and  f.faculty_code = #{query.facultyCode}
+			</if>
+			<if test="query.description != null and query.description!=''">
+				 and  f.description = #{query.description}
+			</if>
+			<if test="query.sortOrder != null">
+				 and  f.sort_order = #{query.sortOrder}
+			</if>
+			<if test="query.createTime != null and query.createTime!=''">
+				 <![CDATA[ and  f.create_time=str_to_date(#{query.createTime}, '%Y-%m-%d') ]]>
+			</if>
+	</sql>
+
+	<!-- 通用查询条件列-->
+	<sql id="query_condition">
+	 <where>
+			<include refid="base_condition_filed" />
+			<if test="query.facultyNameFuzzy!= null  and query.facultyNameFuzzy!=''">
+				 and  f.faculty_name like concat('%', #{query.facultyNameFuzzy}, '%')
+			</if>
+			<if test="query.facultyCodeFuzzy!= null  and query.facultyCodeFuzzy!=''">
+				 and  f.faculty_code like concat('%', #{query.facultyCodeFuzzy}, '%')
+			</if>
+			<if test="query.descriptionFuzzy!= null  and query.descriptionFuzzy!=''">
+				 and  f.description like concat('%', #{query.descriptionFuzzy}, '%')
+			</if>
+			<if test="query.createTimeStart!= null and query.createTimeStart!=''">
+				 <![CDATA[ and  f.create_time>=str_to_date(#{query.createTimeStart}, '%Y-%m-%d') ]]>
+			</if>
+			<if test="query.createTimeEnd!= null and query.createTimeEnd!=''">
+				 <![CDATA[ and  f.create_time< date_sub(str_to_date(#{query.createTimeEnd},'%Y-%m-%d'),interval -1 day) ]]>
+			</if>
+	 </where>
+	</sql>
+
+	<!-- 查询集合-->
+	<select id="selectList" resultMap="base_result_map" >
+		 SELECT <include refid="base_column_list" /> FROM faculty_info f <include refid="query_condition" />
+		 <if test="query.orderBy!=null">
+			 order by ${query.orderBy}
+		 </if>
+		 <if test="query.simplePage!=null">
+			 limit #{query.simplePage.start},#{query.simplePage.end}
+		 </if>
+	</select>
+
+	<!-- 查询数量-->
+	<select id="selectCount" resultType="java.lang.Integer" >
+		 SELECT count(1) FROM faculty_info f <include refid="query_condition" />
+	</select>
+
+	<!-- 插入 （匹配有值的字段）-->
+	<insert id="insert" parameterType="com.smart.campus.entity.po.FacultyInfo">
+		<selectKey keyProperty="bean.facultyId" resultType="Integer" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		 INSERT INTO faculty_info
+		 <trim prefix="(" suffix=")" suffixOverrides="," >
+			<if test="bean.facultyName != null">
+				 faculty_name,
+			</if>
+			<if test="bean.facultyCode != null">
+				 faculty_code,
+			</if>
+			<if test="bean.description != null">
+				 description,
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order,
+			</if>
+			<if test="bean.createTime != null">
+				 create_time,
+			</if>
+		 </trim>
+		 <trim prefix="values (" suffix=")" suffixOverrides="," >
+			<if test="bean.facultyName!=null">
+				 #{bean.facultyName},
+			</if>
+			<if test="bean.facultyCode!=null">
+				 #{bean.facultyCode},
+			</if>
+			<if test="bean.description!=null">
+				 #{bean.description},
+			</if>
+			<if test="bean.sortOrder!=null">
+				 #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime!=null">
+				 #{bean.createTime},
+			</if>
+		 </trim>
+	</insert>
+
+	<!-- 插入或者更新 （匹配有值的字段）-->
+	<insert id="insertOrUpdate" parameterType="com.smart.campus.entity.po.FacultyInfo">
+		 INSERT INTO faculty_info
+		 <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="bean.facultyId != null">
+				 faculty_id,
+			</if>
+			<if test="bean.facultyName != null">
+				 faculty_name,
+			</if>
+			<if test="bean.facultyCode != null">
+				 faculty_code,
+			</if>
+			<if test="bean.description != null">
+				 description,
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order,
+			</if>
+			<if test="bean.createTime != null">
+				 create_time,
+			</if>
+		 </trim>
+		 <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="bean.facultyId!=null">
+				 #{bean.facultyId},
+			</if>
+			<if test="bean.facultyName!=null">
+				 #{bean.facultyName},
+			</if>
+			<if test="bean.facultyCode!=null">
+				 #{bean.facultyCode},
+			</if>
+			<if test="bean.description!=null">
+				 #{bean.description},
+			</if>
+			<if test="bean.sortOrder!=null">
+				 #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime!=null">
+				 #{bean.createTime},
+			</if>
+		 </trim>
+		 on DUPLICATE key update 
+		 <trim prefix="" suffix="" suffixOverrides=",">
+			<if test="bean.facultyName!=null">
+				 faculty_name = VALUES(faculty_name),
+			</if>
+			<if test="bean.facultyCode!=null">
+				 faculty_code = VALUES(faculty_code),
+			</if>
+			<if test="bean.description!=null">
+				 description = VALUES(description),
+			</if>
+			<if test="bean.sortOrder!=null">
+				 sort_order = VALUES(sort_order),
+			</if>
+			<if test="bean.createTime!=null">
+				 create_time = VALUES(create_time),
+			</if>
+		 </trim>
+	</insert>
+
+	<!-- 添加 （批量插入）-->
+	<insert id="insertBatch" parameterType="com.smart.campus.entity.po.FacultyInfo" useGeneratedKeys="true" keyProperty="facultyId">
+		 INSERT INTO faculty_info(
+			 faculty_name,
+			 faculty_code,
+			 description,
+			 sort_order,
+			 create_time
+		 )values
+		 <foreach collection="list" item="item" separator=",">
+			 (
+				 #{item.facultyName},
+				 #{item.facultyCode},
+				 #{item.description},
+				 #{item.sortOrder},
+				 #{item.createTime}
+			 )
+		 </foreach>
+	</insert>
+
+	<!-- 批量新增修改 （批量插入）-->
+	<insert id="insertOrUpdateBatch" parameterType="com.smart.campus.entity.po.FacultyInfo">
+		 INSERT INTO faculty_info(
+			 faculty_name,
+			 faculty_code,
+			 description,
+			 sort_order,
+			 create_time
+		 )values
+		 <foreach collection="list" item="item" separator=",">
+			 (
+				 #{item.facultyName},
+				 #{item.facultyCode},
+				 #{item.description},
+				 #{item.sortOrder},
+				 #{item.createTime}
+			 )
+		 </foreach>
+			on DUPLICATE key update 
+			faculty_name = VALUES(faculty_name),
+			faculty_code = VALUES(faculty_code),
+			description = VALUES(description),
+			sort_order = VALUES(sort_order),
+			create_time = VALUES(create_time)
+	</insert>
+
+	<!--多条件修改-->
+	<update id="updateByParam" parameterType="com.smart.campus.entity.query.FacultyInfoQuery">
+		 UPDATE faculty_info f
+ 		 <set> 
+			<if test="bean.facultyName != null">
+				 faculty_name = #{bean.facultyName},
+			</if>
+			<if test="bean.facultyCode != null">
+				 faculty_code = #{bean.facultyCode},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 <include refid="query_condition" />
+	</update>
+
+	<!--多条件删除-->
+	<delete id="deleteByParam">
+		 delete f from faculty_info f
+ 		 <include refid="query_condition" />
+	</delete>
+
+	<!-- 根据FacultyId修改-->
+	<update id="updateByFacultyId" parameterType="com.smart.campus.entity.po.FacultyInfo">
+		 UPDATE faculty_info
+ 		 <set> 
+			<if test="bean.facultyName != null">
+				 faculty_name = #{bean.facultyName},
+			</if>
+			<if test="bean.facultyCode != null">
+				 faculty_code = #{bean.facultyCode},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 where faculty_id=#{facultyId}
+	</update>
+
+	<!-- 根据FacultyId删除-->
+	<delete id="deleteByFacultyId">
+		delete from faculty_info where faculty_id=#{facultyId}
+	</delete>
+
+	<!-- 根据PrimaryKey获取对象-->
+	<select id="selectByFacultyId" resultMap="base_result_map" >
+		select <include refid="base_column_list" /> from faculty_info f where faculty_id=#{facultyId}
+	</select>
+
+	<!-- 根据FacultyCode修改-->
+	<update id="updateByFacultyCode" parameterType="com.smart.campus.entity.po.FacultyInfo">
+		 UPDATE faculty_info
+ 		 <set> 
+			<if test="bean.facultyName != null">
+				 faculty_name = #{bean.facultyName},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 where faculty_code=#{facultyCode}
+	</update>
+
+	<!-- 根据FacultyCode删除-->
+	<delete id="deleteByFacultyCode">
+		delete from faculty_info where faculty_code=#{facultyCode}
+	</delete>
+
+	<!-- 根据PrimaryKey获取对象-->
+	<select id="selectByFacultyCode" resultMap="base_result_map" >
+		select <include refid="base_column_list" /> from faculty_info f where faculty_code=#{facultyCode}
+	</select>
+
+</mapper>

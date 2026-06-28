@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smart.campus.mappers.ClassInfoMapper">
+
+	<!--实体映射-->
+	<resultMap id="base_result_map" type="com.smart.campus.entity.po.ClassInfo">
+		<!---->
+		<id column="class_id" property="classId"  />
+		<!--班级名称-->
+		<result column="class_name" property="className"  />
+		<!--班级编码（唯一）-->
+		<result column="class_code" property="classCode"  />
+		<!--所属专业ID-->
+		<result column="major_id" property="majorId"  />
+		<!--年级（如 2024）-->
+		<result column="grade" property="grade"  />
+		<!--班级描述-->
+		<result column="description" property="description"  />
+		<!--排序权重-->
+		<result column="sort_order" property="sortOrder"  />
+		<!--创建时间-->
+		<result column="create_time" property="createTime"  />
+	</resultMap>
+
+
+	<!-- 通用查询结果列-->
+	<sql id="base_column_list">
+		 c.class_id,c.class_name,c.class_code,c.major_id,c.grade,
+		 c.description,c.sort_order,c.create_time
+	</sql>
+
+	<sql id="base_condition_filed">
+			<if test="query.classId != null">
+				 and  c.class_id = #{query.classId}
+			</if>
+			<if test="query.className != null and query.className!=''">
+				 and  c.class_name = #{query.className}
+			</if>
+			<if test="query.classCode != null and query.classCode!=''">
+				 and  c.class_code = #{query.classCode}
+			</if>
+			<if test="query.majorId != null">
+				 and  c.major_id = #{query.majorId}
+			</if>
+			<if test="query.grade != null and query.grade!=''">
+				 and  c.grade = #{query.grade}
+			</if>
+			<if test="query.description != null and query.description!=''">
+				 and  c.description = #{query.description}
+			</if>
+			<if test="query.sortOrder != null">
+				 and  c.sort_order = #{query.sortOrder}
+			</if>
+			<if test="query.createTime != null and query.createTime!=''">
+				 <![CDATA[ and  c.create_time=str_to_date(#{query.createTime}, '%Y-%m-%d') ]]>
+			</if>
+	</sql>
+
+	<!-- 通用查询条件列-->
+	<sql id="query_condition">
+	 <where>
+			<include refid="base_condition_filed" />
+			<if test="query.classNameFuzzy!= null  and query.classNameFuzzy!=''">
+				 and  c.class_name like concat('%', #{query.classNameFuzzy}, '%')
+			</if>
+			<if test="query.classCodeFuzzy!= null  and query.classCodeFuzzy!=''">
+				 and  c.class_code like concat('%', #{query.classCodeFuzzy}, '%')
+			</if>
+			<if test="query.gradeFuzzy!= null  and query.gradeFuzzy!=''">
+				 and  c.grade like concat('%', #{query.gradeFuzzy}, '%')
+			</if>
+			<if test="query.descriptionFuzzy!= null  and query.descriptionFuzzy!=''">
+				 and  c.description like concat('%', #{query.descriptionFuzzy}, '%')
+			</if>
+			<if test="query.createTimeStart!= null and query.createTimeStart!=''">
+				 <![CDATA[ and  c.create_time>=str_to_date(#{query.createTimeStart}, '%Y-%m-%d') ]]>
+			</if>
+			<if test="query.createTimeEnd!= null and query.createTimeEnd!=''">
+				 <![CDATA[ and  c.create_time< date_sub(str_to_date(#{query.createTimeEnd},'%Y-%m-%d'),interval -1 day) ]]>
+			</if>
+	 </where>
+	</sql>
+
+	<!-- 查询集合-->
+	<select id="selectList" resultMap="base_result_map" >
+		 SELECT <include refid="base_column_list" /> FROM class_info c <include refid="query_condition" />
+		 <if test="query.orderBy!=null">
+			 order by ${query.orderBy}
+		 </if>
+		 <if test="query.simplePage!=null">
+			 limit #{query.simplePage.start},#{query.simplePage.end}
+		 </if>
+	</select>
+
+	<!-- 查询数量-->
+	<select id="selectCount" resultType="java.lang.Integer" >
+		 SELECT count(1) FROM class_info c <include refid="query_condition" />
+	</select>
+
+	<!-- 插入 （匹配有值的字段）-->
+	<insert id="insert" parameterType="com.smart.campus.entity.po.ClassInfo">
+		<selectKey keyProperty="bean.classId" resultType="Integer" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		 INSERT INTO class_info
+		 <trim prefix="(" suffix=")" suffixOverrides="," >
+			<if test="bean.className != null">
+				 class_name,
+			</if>
+			<if test="bean.classCode != null">
+				 class_code,
+			</if>
+			<if test="bean.majorId != null">
+				 major_id,
+			</if>
+			<if test="bean.grade != null">
+				 grade,
+			</if>
+			<if test="bean.description != null">
+				 description,
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order,
+			</if>
+			<if test="bean.createTime != null">
+				 create_time,
+			</if>
+		 </trim>
+		 <trim prefix="values (" suffix=")" suffixOverrides="," >
+			<if test="bean.className!=null">
+				 #{bean.className},
+			</if>
+			<if test="bean.classCode!=null">
+				 #{bean.classCode},
+			</if>
+			<if test="bean.majorId!=null">
+				 #{bean.majorId},
+			</if>
+			<if test="bean.grade!=null">
+				 #{bean.grade},
+			</if>
+			<if test="bean.description!=null">
+				 #{bean.description},
+			</if>
+			<if test="bean.sortOrder!=null">
+				 #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime!=null">
+				 #{bean.createTime},
+			</if>
+		 </trim>
+	</insert>
+
+	<!-- 插入或者更新 （匹配有值的字段）-->
+	<insert id="insertOrUpdate" parameterType="com.smart.campus.entity.po.ClassInfo">
+		 INSERT INTO class_info
+		 <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="bean.classId != null">
+				 class_id,
+			</if>
+			<if test="bean.className != null">
+				 class_name,
+			</if>
+			<if test="bean.classCode != null">
+				 class_code,
+			</if>
+			<if test="bean.majorId != null">
+				 major_id,
+			</if>
+			<if test="bean.grade != null">
+				 grade,
+			</if>
+			<if test="bean.description != null">
+				 description,
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order,
+			</if>
+			<if test="bean.createTime != null">
+				 create_time,
+			</if>
+		 </trim>
+		 <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="bean.classId!=null">
+				 #{bean.classId},
+			</if>
+			<if test="bean.className!=null">
+				 #{bean.className},
+			</if>
+			<if test="bean.classCode!=null">
+				 #{bean.classCode},
+			</if>
+			<if test="bean.majorId!=null">
+				 #{bean.majorId},
+			</if>
+			<if test="bean.grade!=null">
+				 #{bean.grade},
+			</if>
+			<if test="bean.description!=null">
+				 #{bean.description},
+			</if>
+			<if test="bean.sortOrder!=null">
+				 #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime!=null">
+				 #{bean.createTime},
+			</if>
+		 </trim>
+		 on DUPLICATE key update 
+		 <trim prefix="" suffix="" suffixOverrides=",">
+			<if test="bean.className!=null">
+				 class_name = VALUES(class_name),
+			</if>
+			<if test="bean.classCode!=null">
+				 class_code = VALUES(class_code),
+			</if>
+			<if test="bean.majorId!=null">
+				 major_id = VALUES(major_id),
+			</if>
+			<if test="bean.grade!=null">
+				 grade = VALUES(grade),
+			</if>
+			<if test="bean.description!=null">
+				 description = VALUES(description),
+			</if>
+			<if test="bean.sortOrder!=null">
+				 sort_order = VALUES(sort_order),
+			</if>
+			<if test="bean.createTime!=null">
+				 create_time = VALUES(create_time),
+			</if>
+		 </trim>
+	</insert>
+
+	<!-- 添加 （批量插入）-->
+	<insert id="insertBatch" parameterType="com.smart.campus.entity.po.ClassInfo" useGeneratedKeys="true" keyProperty="classId">
+		 INSERT INTO class_info(
+			 class_name,
+			 class_code,
+			 major_id,
+			 grade,
+			 description,
+			 sort_order,
+			 create_time
+		 )values
+		 <foreach collection="list" item="item" separator=",">
+			 (
+				 #{item.className},
+				 #{item.classCode},
+				 #{item.majorId},
+				 #{item.grade},
+				 #{item.description},
+				 #{item.sortOrder},
+				 #{item.createTime}
+			 )
+		 </foreach>
+	</insert>
+
+	<!-- 批量新增修改 （批量插入）-->
+	<insert id="insertOrUpdateBatch" parameterType="com.smart.campus.entity.po.ClassInfo">
+		 INSERT INTO class_info(
+			 class_name,
+			 class_code,
+			 major_id,
+			 grade,
+			 description,
+			 sort_order,
+			 create_time
+		 )values
+		 <foreach collection="list" item="item" separator=",">
+			 (
+				 #{item.className},
+				 #{item.classCode},
+				 #{item.majorId},
+				 #{item.grade},
+				 #{item.description},
+				 #{item.sortOrder},
+				 #{item.createTime}
+			 )
+		 </foreach>
+			on DUPLICATE key update 
+			class_name = VALUES(class_name),
+			class_code = VALUES(class_code),
+			major_id = VALUES(major_id),
+			grade = VALUES(grade),
+			description = VALUES(description),
+			sort_order = VALUES(sort_order),
+			create_time = VALUES(create_time)
+	</insert>
+
+	<!--多条件修改-->
+	<update id="updateByParam" parameterType="com.smart.campus.entity.query.ClassInfoQuery">
+		 UPDATE class_info c
+ 		 <set> 
+			<if test="bean.className != null">
+				 class_name = #{bean.className},
+			</if>
+			<if test="bean.classCode != null">
+				 class_code = #{bean.classCode},
+			</if>
+			<if test="bean.majorId != null">
+				 major_id = #{bean.majorId},
+			</if>
+			<if test="bean.grade != null">
+				 grade = #{bean.grade},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 <include refid="query_condition" />
+	</update>
+
+	<!--多条件删除-->
+	<delete id="deleteByParam">
+		 delete c from class_info c
+ 		 <include refid="query_condition" />
+	</delete>
+
+	<!-- 根据ClassId修改-->
+	<update id="updateByClassId" parameterType="com.smart.campus.entity.po.ClassInfo">
+		 UPDATE class_info
+ 		 <set> 
+			<if test="bean.className != null">
+				 class_name = #{bean.className},
+			</if>
+			<if test="bean.classCode != null">
+				 class_code = #{bean.classCode},
+			</if>
+			<if test="bean.majorId != null">
+				 major_id = #{bean.majorId},
+			</if>
+			<if test="bean.grade != null">
+				 grade = #{bean.grade},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 where class_id=#{classId}
+	</update>
+
+	<!-- 根据ClassId删除-->
+	<delete id="deleteByClassId">
+		delete from class_info where class_id=#{classId}
+	</delete>
+
+	<!-- 根据PrimaryKey获取对象-->
+	<select id="selectByClassId" resultMap="base_result_map" >
+		select <include refid="base_column_list" /> from class_info c where class_id=#{classId}
+	</select>
+
+	<!-- 根据ClassCode修改-->
+	<update id="updateByClassCode" parameterType="com.smart.campus.entity.po.ClassInfo">
+		 UPDATE class_info
+ 		 <set> 
+			<if test="bean.className != null">
+				 class_name = #{bean.className},
+			</if>
+			<if test="bean.majorId != null">
+				 major_id = #{bean.majorId},
+			</if>
+			<if test="bean.grade != null">
+				 grade = #{bean.grade},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 where class_code=#{classCode}
+	</update>
+
+	<!-- 根据ClassCode删除-->
+	<delete id="deleteByClassCode">
+		delete from class_info where class_code=#{classCode}
+	</delete>
+
+	<!-- 根据PrimaryKey获取对象-->
+	<select id="selectByClassCode" resultMap="base_result_map" >
+		select <include refid="base_column_list" /> from class_info c where class_code=#{classCode}
+	</select>
+
+</mapper>

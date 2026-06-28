@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smart.campus.mappers.MajorInfoMapper">
+
+	<!--实体映射-->
+	<resultMap id="base_result_map" type="com.smart.campus.entity.po.MajorInfo">
+		<!---->
+		<id column="major_id" property="majorId"  />
+		<!--专业名称-->
+		<result column="major_name" property="majorName"  />
+		<!--专业编码（唯一）-->
+		<result column="major_code" property="majorCode"  />
+		<!--所属院系ID-->
+		<result column="faculty_id" property="facultyId"  />
+		<!--专业描述-->
+		<result column="description" property="description"  />
+		<!--排序权重-->
+		<result column="sort_order" property="sortOrder"  />
+		<!--创建时间-->
+		<result column="create_time" property="createTime"  />
+	</resultMap>
+
+
+	<!-- 通用查询结果列-->
+	<sql id="base_column_list">
+		 m.major_id,m.major_name,m.major_code,m.faculty_id,m.description,
+		 m.sort_order,m.create_time
+	</sql>
+
+	<sql id="base_condition_filed">
+			<if test="query.majorId != null">
+				 and  m.major_id = #{query.majorId}
+			</if>
+			<if test="query.majorName != null and query.majorName!=''">
+				 and  m.major_name = #{query.majorName}
+			</if>
+			<if test="query.majorCode != null and query.majorCode!=''">
+				 and  m.major_code = #{query.majorCode}
+			</if>
+			<if test="query.facultyId != null">
+				 and  m.faculty_id = #{query.facultyId}
+			</if>
+			<if test="query.description != null and query.description!=''">
+				 and  m.description = #{query.description}
+			</if>
+			<if test="query.sortOrder != null">
+				 and  m.sort_order = #{query.sortOrder}
+			</if>
+			<if test="query.createTime != null and query.createTime!=''">
+				 <![CDATA[ and  m.create_time=str_to_date(#{query.createTime}, '%Y-%m-%d') ]]>
+			</if>
+	</sql>
+
+	<!-- 通用查询条件列-->
+	<sql id="query_condition">
+	 <where>
+			<include refid="base_condition_filed" />
+			<if test="query.majorNameFuzzy!= null  and query.majorNameFuzzy!=''">
+				 and  m.major_name like concat('%', #{query.majorNameFuzzy}, '%')
+			</if>
+			<if test="query.majorCodeFuzzy!= null  and query.majorCodeFuzzy!=''">
+				 and  m.major_code like concat('%', #{query.majorCodeFuzzy}, '%')
+			</if>
+			<if test="query.descriptionFuzzy!= null  and query.descriptionFuzzy!=''">
+				 and  m.description like concat('%', #{query.descriptionFuzzy}, '%')
+			</if>
+			<if test="query.createTimeStart!= null and query.createTimeStart!=''">
+				 <![CDATA[ and  m.create_time>=str_to_date(#{query.createTimeStart}, '%Y-%m-%d') ]]>
+			</if>
+			<if test="query.createTimeEnd!= null and query.createTimeEnd!=''">
+				 <![CDATA[ and  m.create_time< date_sub(str_to_date(#{query.createTimeEnd},'%Y-%m-%d'),interval -1 day) ]]>
+			</if>
+	 </where>
+	</sql>
+
+	<!-- 查询集合-->
+	<select id="selectList" resultMap="base_result_map" >
+		 SELECT <include refid="base_column_list" /> FROM major_info m <include refid="query_condition" />
+		 <if test="query.orderBy!=null">
+			 order by ${query.orderBy}
+		 </if>
+		 <if test="query.simplePage!=null">
+			 limit #{query.simplePage.start},#{query.simplePage.end}
+		 </if>
+	</select>
+
+	<!-- 查询数量-->
+	<select id="selectCount" resultType="java.lang.Integer" >
+		 SELECT count(1) FROM major_info m <include refid="query_condition" />
+	</select>
+
+	<!-- 插入 （匹配有值的字段）-->
+	<insert id="insert" parameterType="com.smart.campus.entity.po.MajorInfo">
+		<selectKey keyProperty="bean.majorId" resultType="Integer" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		 INSERT INTO major_info
+		 <trim prefix="(" suffix=")" suffixOverrides="," >
+			<if test="bean.majorName != null">
+				 major_name,
+			</if>
+			<if test="bean.majorCode != null">
+				 major_code,
+			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id,
+			</if>
+			<if test="bean.description != null">
+				 description,
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order,
+			</if>
+			<if test="bean.createTime != null">
+				 create_time,
+			</if>
+		 </trim>
+		 <trim prefix="values (" suffix=")" suffixOverrides="," >
+			<if test="bean.majorName!=null">
+				 #{bean.majorName},
+			</if>
+			<if test="bean.majorCode!=null">
+				 #{bean.majorCode},
+			</if>
+			<if test="bean.facultyId!=null">
+				 #{bean.facultyId},
+			</if>
+			<if test="bean.description!=null">
+				 #{bean.description},
+			</if>
+			<if test="bean.sortOrder!=null">
+				 #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime!=null">
+				 #{bean.createTime},
+			</if>
+		 </trim>
+	</insert>
+
+	<!-- 插入或者更新 （匹配有值的字段）-->
+	<insert id="insertOrUpdate" parameterType="com.smart.campus.entity.po.MajorInfo">
+		 INSERT INTO major_info
+		 <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="bean.majorId != null">
+				 major_id,
+			</if>
+			<if test="bean.majorName != null">
+				 major_name,
+			</if>
+			<if test="bean.majorCode != null">
+				 major_code,
+			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id,
+			</if>
+			<if test="bean.description != null">
+				 description,
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order,
+			</if>
+			<if test="bean.createTime != null">
+				 create_time,
+			</if>
+		 </trim>
+		 <trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="bean.majorId!=null">
+				 #{bean.majorId},
+			</if>
+			<if test="bean.majorName!=null">
+				 #{bean.majorName},
+			</if>
+			<if test="bean.majorCode!=null">
+				 #{bean.majorCode},
+			</if>
+			<if test="bean.facultyId!=null">
+				 #{bean.facultyId},
+			</if>
+			<if test="bean.description!=null">
+				 #{bean.description},
+			</if>
+			<if test="bean.sortOrder!=null">
+				 #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime!=null">
+				 #{bean.createTime},
+			</if>
+		 </trim>
+		 on DUPLICATE key update 
+		 <trim prefix="" suffix="" suffixOverrides=",">
+			<if test="bean.majorName!=null">
+				 major_name = VALUES(major_name),
+			</if>
+			<if test="bean.majorCode!=null">
+				 major_code = VALUES(major_code),
+			</if>
+			<if test="bean.facultyId!=null">
+				 faculty_id = VALUES(faculty_id),
+			</if>
+			<if test="bean.description!=null">
+				 description = VALUES(description),
+			</if>
+			<if test="bean.sortOrder!=null">
+				 sort_order = VALUES(sort_order),
+			</if>
+			<if test="bean.createTime!=null">
+				 create_time = VALUES(create_time),
+			</if>
+		 </trim>
+	</insert>
+
+	<!-- 添加 （批量插入）-->
+	<insert id="insertBatch" parameterType="com.smart.campus.entity.po.MajorInfo" useGeneratedKeys="true" keyProperty="majorId">
+		 INSERT INTO major_info(
+			 major_name,
+			 major_code,
+			 faculty_id,
+			 description,
+			 sort_order,
+			 create_time
+		 )values
+		 <foreach collection="list" item="item" separator=",">
+			 (
+				 #{item.majorName},
+				 #{item.majorCode},
+				 #{item.facultyId},
+				 #{item.description},
+				 #{item.sortOrder},
+				 #{item.createTime}
+			 )
+		 </foreach>
+	</insert>
+
+	<!-- 批量新增修改 （批量插入）-->
+	<insert id="insertOrUpdateBatch" parameterType="com.smart.campus.entity.po.MajorInfo">
+		 INSERT INTO major_info(
+			 major_name,
+			 major_code,
+			 faculty_id,
+			 description,
+			 sort_order,
+			 create_time
+		 )values
+		 <foreach collection="list" item="item" separator=",">
+			 (
+				 #{item.majorName},
+				 #{item.majorCode},
+				 #{item.facultyId},
+				 #{item.description},
+				 #{item.sortOrder},
+				 #{item.createTime}
+			 )
+		 </foreach>
+			on DUPLICATE key update 
+			major_name = VALUES(major_name),
+			major_code = VALUES(major_code),
+			faculty_id = VALUES(faculty_id),
+			description = VALUES(description),
+			sort_order = VALUES(sort_order),
+			create_time = VALUES(create_time)
+	</insert>
+
+	<!--多条件修改-->
+	<update id="updateByParam" parameterType="com.smart.campus.entity.query.MajorInfoQuery">
+		 UPDATE major_info m
+ 		 <set> 
+			<if test="bean.majorName != null">
+				 major_name = #{bean.majorName},
+			</if>
+			<if test="bean.majorCode != null">
+				 major_code = #{bean.majorCode},
+			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id = #{bean.facultyId},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 <include refid="query_condition" />
+	</update>
+
+	<!--多条件删除-->
+	<delete id="deleteByParam">
+		 delete m from major_info m
+ 		 <include refid="query_condition" />
+	</delete>
+
+	<!-- 根据MajorId修改-->
+	<update id="updateByMajorId" parameterType="com.smart.campus.entity.po.MajorInfo">
+		 UPDATE major_info
+ 		 <set> 
+			<if test="bean.majorName != null">
+				 major_name = #{bean.majorName},
+			</if>
+			<if test="bean.majorCode != null">
+				 major_code = #{bean.majorCode},
+			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id = #{bean.facultyId},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 where major_id=#{majorId}
+	</update>
+
+	<!-- 根据MajorId删除-->
+	<delete id="deleteByMajorId">
+		delete from major_info where major_id=#{majorId}
+	</delete>
+
+	<!-- 根据PrimaryKey获取对象-->
+	<select id="selectByMajorId" resultMap="base_result_map" >
+		select <include refid="base_column_list" /> from major_info m where major_id=#{majorId}
+	</select>
+
+	<!-- 根据MajorCode修改-->
+	<update id="updateByMajorCode" parameterType="com.smart.campus.entity.po.MajorInfo">
+		 UPDATE major_info
+ 		 <set> 
+			<if test="bean.majorName != null">
+				 major_name = #{bean.majorName},
+			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id = #{bean.facultyId},
+			</if>
+			<if test="bean.description != null">
+				 description = #{bean.description},
+			</if>
+			<if test="bean.sortOrder != null">
+				 sort_order = #{bean.sortOrder},
+			</if>
+			<if test="bean.createTime != null">
+				 create_time = #{bean.createTime},
+			</if>
+ 		 </set>
+ 		 where major_code=#{majorCode}
+	</update>
+
+	<!-- 根据MajorCode删除-->
+	<delete id="deleteByMajorCode">
+		delete from major_info where major_code=#{majorCode}
+	</delete>
+
+	<!-- 根据PrimaryKey获取对象-->
+	<select id="selectByMajorCode" resultMap="base_result_map" >
+		select <include refid="base_column_list" /> from major_info m where major_code=#{majorCode}
+	</select>
+
+</mapper>
