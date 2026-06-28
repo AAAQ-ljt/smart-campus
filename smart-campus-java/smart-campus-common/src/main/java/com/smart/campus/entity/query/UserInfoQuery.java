@@ -43,6 +43,16 @@ public class UserInfoQuery extends BaseParam {
 	private String roleTypeFuzzy;
 
 	/**
+	 * 所属院系ID
+	 */
+	private Integer facultyId;
+
+	/**
+	 * 所属专业ID
+	 */
+	private Integer majorId;
+
+	/**
 	 * 学生所属班级ID,老师所属班级多个ID用逗号隔开
 	 */
 	private String classId;
@@ -171,6 +181,22 @@ public class UserInfoQuery extends BaseParam {
 
 	public String getRoleTypeFuzzy(){
 		return this.roleTypeFuzzy;
+	}
+
+	public void setFacultyId(Integer facultyId){
+		this.facultyId = facultyId;
+	}
+
+	public Integer getFacultyId(){
+		return this.facultyId;
+	}
+
+	public void setMajorId(Integer majorId){
+		this.majorId = majorId;
+	}
+
+	public Integer getMajorId(){
+		return this.majorId;
 	}
 
 	public void setClassId(String classId){

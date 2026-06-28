@@ -42,6 +42,31 @@ public class UserInfo implements Serializable {
 	private String roleType;
 
 	/**
+	 * 所属院系ID（教师/学生必填，多值逗号隔开）
+	 */
+	private Integer facultyId;
+
+	/**
+	 * 所属院系名称（关联查询，非表字段）
+	 */
+	private String facultyName;
+
+	/**
+	 * 所属专业ID（学生必填）
+	 */
+	private Integer majorId;
+
+	/**
+	 * 所属专业名称（关联查询，非表字段）
+	 */
+	private String majorName;
+
+	/**
+	 * 班级名称（关联查询，非表字段，仅学生单班级有效）
+	 */
+	private String className;
+
+	/**
 	 * 学生所属班级ID,老师所属班级多个ID用逗号隔开
 	 */
 	private String classId;
@@ -49,7 +74,6 @@ public class UserInfo implements Serializable {
 	/**
 	 * 手机号
 	 */
-	@JsonIgnore
 	private String phone;
 
 	/**
@@ -125,6 +149,46 @@ public class UserInfo implements Serializable {
 
 	public String getRoleType(){
 		return this.roleType;
+	}
+
+	public void setFacultyId(Integer facultyId){
+		this.facultyId = facultyId;
+	}
+
+	public Integer getFacultyId(){
+		return this.facultyId;
+	}
+
+	public void setFacultyName(String facultyName){
+		this.facultyName = facultyName;
+	}
+
+	public String getFacultyName(){
+		return this.facultyName;
+	}
+
+	public void setMajorId(Integer majorId){
+		this.majorId = majorId;
+	}
+
+	public Integer getMajorId(){
+		return this.majorId;
+	}
+
+	public void setMajorName(String majorName){
+		this.majorName = majorName;
+	}
+
+	public String getMajorName(){
+		return this.majorName;
+	}
+
+	public void setClassName(String className){
+		this.className = className;
+	}
+
+	public String getClassName(){
+		return this.className;
 	}
 
 	public void setClassId(String classId){

@@ -15,6 +15,16 @@
 		<result column="real_name" property="realName"  />
 		<!--角色类型：admin-管理员, teacher-教师, student-学生-->
 		<result column="role_type" property="roleType"  />
+		<!--所属院系ID-->
+		<result column="faculty_id" property="facultyId"  />
+		<!--所属院系名称（关联查询）-->
+		<result column="faculty_name" property="facultyName"  />
+		<!--所属专业ID-->
+		<result column="major_id" property="majorId"  />
+		<!--所属专业名称（关联查询）-->
+		<result column="major_name" property="majorName"  />
+		<!--班级名称（关联查询）-->
+		<result column="class_name" property="className"  />
 		<!--学生所属班级ID,老师所属班级多个ID用逗号隔开-->
 		<result column="class_id" property="classId"  />
 		<!--手机号-->
@@ -37,7 +47,9 @@
 	<!-- 通用查询结果列-->
 	<sql id="base_column_list">
 		 u.user_id,u.user_no,u.password,u.real_name,u.role_type,
-		 u.class_id,u.phone,u.email,u.avatar,u.gender,
+		 u.faculty_id,fa.faculty_name,u.major_id,ma.major_name,u.class_id,
+		 (SELECT GROUP_CONCAT(ci.class_name ORDER BY ci.class_id SEPARATOR ',') FROM class_info ci WHERE FIND_IN_SET(ci.class_id, u.class_id) > 0) AS class_name,
+		 u.phone,u.email,u.avatar,u.gender,
 		 u.status,u.last_login_time,u.create_time
 	</sql>
 
@@ -56,6 +68,12 @@
 			</if>
 			<if test="query.roleType != null and query.roleType!=''">
 				 and  u.role_type = #{query.roleType}
+			</if>
+			<if test="query.facultyId != null">
+				 and  u.faculty_id = #{query.facultyId}
+			</if>
+			<if test="query.majorId != null">
+				 and  u.major_id = #{query.majorId}
 			</if>
 			<if test="query.classId != null and query.classId!=''">
 				 and  u.class_id = #{query.classId}
@@ -131,7 +149,10 @@
 
 	<!-- 查询集合-->
 	<select id="selectList" resultMap="base_result_map" >
-		 SELECT <include refid="base_column_list" /> FROM user_info u <include refid="query_condition" />
+		 SELECT <include refid="base_column_list" /> FROM user_info u
+		 LEFT JOIN faculty_info fa ON u.faculty_id = fa.faculty_id
+		 LEFT JOIN major_info ma ON u.major_id = ma.major_id
+		 <include refid="query_condition" />
 		 <if test="query.orderBy!=null">
 			 order by ${query.orderBy}
 		 </if>
@@ -163,6 +184,12 @@
 			</if>
 			<if test="bean.roleType != null">
 				 role_type,
+			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id,
+			</if>
+			<if test="bean.majorId != null">
+				 major_id,
 			</if>
 			<if test="bean.classId != null">
 				 class_id,
@@ -201,6 +228,12 @@
 			</if>
 			<if test="bean.roleType!=null">
 				 #{bean.roleType},
+			</if>
+			<if test="bean.facultyId!=null">
+				 #{bean.facultyId},
+			</if>
+			<if test="bean.majorId!=null">
+				 #{bean.majorId},
 			</if>
 			<if test="bean.classId!=null">
 				 #{bean.classId},
@@ -248,6 +281,12 @@
 			<if test="bean.roleType != null">
 				 role_type,
 			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id,
+			</if>
+			<if test="bean.majorId != null">
+				 major_id,
+			</if>
 			<if test="bean.classId != null">
 				 class_id,
 			</if>
@@ -289,6 +328,12 @@
 			<if test="bean.roleType!=null">
 				 #{bean.roleType},
 			</if>
+			<if test="bean.facultyId!=null">
+				 #{bean.facultyId},
+			</if>
+			<if test="bean.majorId!=null">
+				 #{bean.majorId},
+			</if>
 			<if test="bean.classId!=null">
 				 #{bean.classId},
 			</if>
@@ -327,6 +372,12 @@
 			</if>
 			<if test="bean.roleType!=null">
 				 role_type = VALUES(role_type),
+			</if>
+			<if test="bean.facultyId!=null">
+				 faculty_id = VALUES(faculty_id),
+			</if>
+			<if test="bean.majorId!=null">
+				 major_id = VALUES(major_id),
 			</if>
 			<if test="bean.classId!=null">
 				 class_id = VALUES(class_id),
@@ -452,6 +503,12 @@
 			<if test="bean.roleType != null">
 				 role_type = #{bean.roleType},
 			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id = #{bean.facultyId},
+			</if>
+			<if test="bean.majorId != null">
+				 major_id = #{bean.majorId},
+			</if>
 			<if test="bean.classId != null">
 				 class_id = #{bean.classId},
 			</if>
@@ -502,6 +559,12 @@
 			<if test="bean.roleType != null">
 				 role_type = #{bean.roleType},
 			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id = #{bean.facultyId},
+			</if>
+			<if test="bean.majorId != null">
+				 major_id = #{bean.majorId},
+			</if>
 			<if test="bean.classId != null">
 				 class_id = #{bean.classId},
 			</if>
@@ -537,7 +600,11 @@
 
 	<!-- 根据PrimaryKey获取对象-->
 	<select id="selectByUserId" resultMap="base_result_map" >
-		select <include refid="base_column_list" /> from user_info u where user_id=#{userId}
+		select <include refid="base_column_list" /> from user_info u
+		LEFT JOIN faculty_info fa ON u.faculty_id = fa.faculty_id
+		LEFT JOIN major_info ma ON u.major_id = ma.major_id
+		LEFT JOIN class_info ci ON u.class_id = ci.class_id
+		where u.user_id=#{userId}
 	</select>
 
 	<!-- 根据UserNo修改-->
@@ -552,6 +619,12 @@
 			</if>
 			<if test="bean.roleType != null">
 				 role_type = #{bean.roleType},
+			</if>
+			<if test="bean.facultyId != null">
+				 faculty_id = #{bean.facultyId},
+			</if>
+			<if test="bean.majorId != null">
+				 major_id = #{bean.majorId},
 			</if>
 			<if test="bean.classId != null">
 				 class_id = #{bean.classId},
@@ -588,7 +661,11 @@
 
 	<!-- 根据PrimaryKey获取对象-->
 	<select id="selectByUserNo" resultMap="base_result_map" >
-		select <include refid="base_column_list" /> from user_info u where user_no=#{userNo}
+		select <include refid="base_column_list" /> from user_info u
+		LEFT JOIN faculty_info fa ON u.faculty_id = fa.faculty_id
+		LEFT JOIN major_info ma ON u.major_id = ma.major_id
+		LEFT JOIN class_info ci ON u.class_id = ci.class_id
+		where u.user_no=#{userNo}
 	</select>
 
 	<!-- 根据Phone修改-->
@@ -639,7 +716,11 @@
 
 	<!-- 根据PrimaryKey获取对象-->
 	<select id="selectByPhone" resultMap="base_result_map" >
-		select <include refid="base_column_list" /> from user_info u where phone=#{phone}
+		select <include refid="base_column_list" /> from user_info u
+		LEFT JOIN faculty_info fa ON u.faculty_id = fa.faculty_id
+		LEFT JOIN major_info ma ON u.major_id = ma.major_id
+		LEFT JOIN class_info ci ON u.class_id = ci.class_id
+		where u.phone=#{phone}
 	</select>
 
 </mapper>

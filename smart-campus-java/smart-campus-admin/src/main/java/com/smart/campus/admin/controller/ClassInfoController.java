@@ -3,9 +3,12 @@ package com.smart.campus.admin.controller;
 import com.smart.campus.controller.ABaseController;
 import com.smart.campus.entity.po.ClassInfo;
 import com.smart.campus.entity.query.ClassInfoQuery;
+import com.smart.campus.entity.query.UserInfoQuery;
 import com.smart.campus.entity.vo.PaginationResultVO;
 import com.smart.campus.entity.vo.ResponseVO;
+import com.smart.campus.exception.BusinessException;
 import com.smart.campus.service.ClassInfoService;
+import com.smart.campus.service.UserInfoService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +21,9 @@ public class ClassInfoController extends ABaseController {
 
     @Resource
     private ClassInfoService classInfoService;
+
+    @Resource
+    private UserInfoService userInfoService;
 
     @PostMapping("/loadClassInfoList")
     public ResponseVO<PaginationResultVO<ClassInfo>> loadClassInfoList(@RequestBody(required = false) ClassInfoQuery query) {
@@ -64,6 +70,12 @@ public class ClassInfoController extends ABaseController {
 
     @PostMapping("/deleteClassInfo")
     public ResponseVO<Integer> deleteClassInfo(@RequestParam Integer classId) {
+        UserInfoQuery userQuery = new UserInfoQuery();
+        userQuery.setClassId(String.valueOf(classId));
+        Integer count = userInfoService.findCountByParam(userQuery);
+        if (count != null && count > 0) {
+            throw new BusinessException("该班级下存在学生，无法删除");
+        }
         Integer result = classInfoService.deleteClassInfoByClassId(classId);
         return getSuccessResponseVO(result);
     }
