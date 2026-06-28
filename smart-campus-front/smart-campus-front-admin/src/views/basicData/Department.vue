@@ -165,21 +165,29 @@ onMounted(() => {
 
     <!-- 搜索卡片 -->
     <div class="search-card">
-      <div class="search-card-row">
-        <el-form ref="searchFormRef" :model="searchForm" inline>
-          <el-form-item label="院系名称">
-            <el-input v-model="searchForm.name" placeholder="请输入院系名称" clearable style="width: 180px" @keyup.enter="handleSearch" />
-          </el-form-item>
-          <el-form-item label="院系编码">
-            <el-input v-model="searchForm.code" placeholder="请输入院系编码" clearable style="width: 180px" @keyup.enter="handleSearch" />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button @click="handleReset">重置</el-button>
-          </el-form-item>
-        </el-form>
-        <el-button type="primary" @click="handleAdd">新增</el-button>
-      </div>
+      <el-form ref="searchFormRef" :model="searchForm">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="院系名称">
+              <el-input v-model="searchForm.name" placeholder="请输入" clearable @keyup.enter="handleSearch" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="院系编码">
+              <el-input v-model="searchForm.code" placeholder="请输入" clearable @keyup.enter="handleSearch" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item>
+              <el-button type="primary" @click="handleSearch">搜索</el-button>
+              <el-button @click="handleReset">重置</el-button>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" class="search-add-col">
+            <el-button type="primary" @click="handleAdd">新增</el-button>
+          </el-col>
+        </el-row>
+      </el-form>
     </div>
 
     <!-- 表格卡片 -->
@@ -237,13 +245,12 @@ onMounted(() => {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  padding: 20px 20px 4px;
+  padding: 20px;
 }
 
-.search-card-row {
+.search-add-col {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .table-card {

@@ -13,6 +13,8 @@
 		<result column="major_code" property="majorCode"  />
 		<!--所属院系ID-->
 		<result column="faculty_id" property="facultyId"  />
+		<!--所属院系名称（关联查询）-->
+		<result column="faculty_name" property="facultyName"  />
 		<!--专业描述-->
 		<result column="description" property="description"  />
 		<!--排序权重-->
@@ -24,8 +26,8 @@
 
 	<!-- 通用查询结果列-->
 	<sql id="base_column_list">
-		 m.major_id,m.major_name,m.major_code,m.faculty_id,m.description,
-		 m.sort_order,m.create_time
+		 m.major_id,m.major_name,m.major_code,m.faculty_id,fa.faculty_name,
+		 m.description,m.sort_order,m.create_time
 	</sql>
 
 	<sql id="base_condition_filed">
@@ -76,7 +78,9 @@
 
 	<!-- 查询集合-->
 	<select id="selectList" resultMap="base_result_map" >
-		 SELECT <include refid="base_column_list" /> FROM major_info m <include refid="query_condition" />
+		 SELECT <include refid="base_column_list" /> FROM major_info m
+		 LEFT JOIN faculty_info fa ON m.faculty_id = fa.faculty_id
+		 <include refid="query_condition" />
 		 <if test="query.orderBy!=null">
 			 order by ${query.orderBy}
 		 </if>
@@ -326,7 +330,9 @@
 
 	<!-- 根据PrimaryKey获取对象-->
 	<select id="selectByMajorId" resultMap="base_result_map" >
-		select <include refid="base_column_list" /> from major_info m where major_id=#{majorId}
+		select <include refid="base_column_list" /> from major_info m
+		LEFT JOIN faculty_info fa ON m.faculty_id = fa.faculty_id
+		where m.major_id=#{majorId}
 	</select>
 
 	<!-- 根据MajorCode修改-->
@@ -359,7 +365,9 @@
 
 	<!-- 根据PrimaryKey获取对象-->
 	<select id="selectByMajorCode" resultMap="base_result_map" >
-		select <include refid="base_column_list" /> from major_info m where major_code=#{majorCode}
+		select <include refid="base_column_list" /> from major_info m
+		LEFT JOIN faculty_info fa ON m.faculty_id = fa.faculty_id
+		where m.major_code=#{majorCode}
 	</select>
 
 </mapper>

@@ -42,6 +42,11 @@ public class MajorInfo implements Serializable {
 	private String description;
 
 	/**
+	 * 所属院系名称（关联查询，非表字段）
+	 */
+	private String facultyName;
+
+	/**
 	 * 排序权重
 	 */
 	private Integer sortOrder;
@@ -92,6 +97,14 @@ public class MajorInfo implements Serializable {
 
 	public String getDescription(){
 		return this.description;
+	}
+
+	public void setFacultyName(String facultyName){
+		this.facultyName = facultyName;
+	}
+
+	public String getFacultyName(){
+		return this.facultyName;
 	}
 
 	public void setSortOrder(Integer sortOrder){
