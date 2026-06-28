@@ -13,6 +13,10 @@
 		<result column="class_code" property="classCode"  />
 		<!--所属专业ID-->
 		<result column="major_id" property="majorId"  />
+		<!--所属专业名称（关联查询）-->
+		<result column="major_name" property="majorName"  />
+		<!--所属院系名称（关联查询）-->
+		<result column="faculty_name" property="facultyName"  />
 		<!--年级（如 2024）-->
 		<result column="grade" property="grade"  />
 		<!--班级描述-->
@@ -26,8 +30,8 @@
 
 	<!-- 通用查询结果列-->
 	<sql id="base_column_list">
-		 c.class_id,c.class_name,c.class_code,c.major_id,c.grade,
-		 c.description,c.sort_order,c.create_time
+		 c.class_id,c.class_name,c.class_code,c.major_id,m.major_name,f.faculty_name,
+		 c.grade,c.description,c.sort_order,c.create_time
 	</sql>
 
 	<sql id="base_condition_filed">
@@ -42,6 +46,9 @@
 			</if>
 			<if test="query.majorId != null">
 				 and  c.major_id = #{query.majorId}
+			</if>
+			<if test="query.facultyId != null">
+				 and  m.faculty_id = #{query.facultyId}
 			</if>
 			<if test="query.grade != null and query.grade!=''">
 				 and  c.grade = #{query.grade}
@@ -84,7 +91,10 @@
 
 	<!-- 查询集合-->
 	<select id="selectList" resultMap="base_result_map" >
-		 SELECT <include refid="base_column_list" /> FROM class_info c <include refid="query_condition" />
+		 SELECT <include refid="base_column_list" /> FROM class_info c
+		 LEFT JOIN major_info m ON c.major_id = m.major_id
+		 LEFT JOIN faculty_info f ON m.faculty_id = f.faculty_id
+		 <include refid="query_condition" />
 		 <if test="query.orderBy!=null">
 			 order by ${query.orderBy}
 		 </if>
@@ -360,7 +370,10 @@
 
 	<!-- 根据PrimaryKey获取对象-->
 	<select id="selectByClassId" resultMap="base_result_map" >
-		select <include refid="base_column_list" /> from class_info c where class_id=#{classId}
+		select <include refid="base_column_list" /> from class_info c
+		LEFT JOIN major_info m ON c.major_id = m.major_id
+		LEFT JOIN faculty_info f ON m.faculty_id = f.faculty_id
+		where c.class_id=#{classId}
 	</select>
 
 	<!-- 根据ClassCode修改-->
@@ -396,7 +409,10 @@
 
 	<!-- 根据PrimaryKey获取对象-->
 	<select id="selectByClassCode" resultMap="base_result_map" >
-		select <include refid="base_column_list" /> from class_info c where class_code=#{classCode}
+		select <include refid="base_column_list" /> from class_info c
+		LEFT JOIN major_info m ON c.major_id = m.major_id
+		LEFT JOIN faculty_info f ON m.faculty_id = f.faculty_id
+		where c.class_code=#{classCode}
 	</select>
 
 </mapper>

@@ -37,6 +37,16 @@ public class ClassInfo implements Serializable {
 	private Integer majorId;
 
 	/**
+	 * 所属专业名称（关联查询，非表字段）
+	 */
+	private String majorName;
+
+	/**
+	 * 所属院系名称（关联查询，非表字段）
+	 */
+	private String facultyName;
+
+	/**
 	 * 年级（如 2024）
 	 */
 	private String grade;
@@ -89,6 +99,22 @@ public class ClassInfo implements Serializable {
 
 	public Integer getMajorId(){
 		return this.majorId;
+	}
+
+	public void setMajorName(String majorName){
+		this.majorName = majorName;
+	}
+
+	public String getMajorName(){
+		return this.majorName;
+	}
+
+	public void setFacultyName(String facultyName){
+		this.facultyName = facultyName;
+	}
+
+	public String getFacultyName(){
+		return this.facultyName;
 	}
 
 	public void setGrade(String grade){

@@ -2,8 +2,11 @@ package com.smart.campus.admin.controller;
 
 import com.smart.campus.controller.ABaseController;
 import com.smart.campus.entity.po.MajorInfo;
+import com.smart.campus.entity.query.ClassInfoQuery;
 import com.smart.campus.entity.query.MajorInfoQuery;
 import com.smart.campus.entity.vo.ResponseVO;
+import com.smart.campus.exception.BusinessException;
+import com.smart.campus.service.ClassInfoService;
 import com.smart.campus.service.MajorInfoService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +21,9 @@ public class MajorInfoController extends ABaseController {
 
     @Resource
     private MajorInfoService majorInfoService;
+
+    @Resource
+    private ClassInfoService classInfoService;
 
     @PostMapping("/loadMajorInfoList")
     public ResponseVO<List<MajorInfo>> loadMajorInfoList(@RequestBody(required = false) MajorInfoQuery query) {
@@ -63,6 +69,12 @@ public class MajorInfoController extends ABaseController {
 
     @PostMapping("/deleteMajorInfo")
     public ResponseVO<Integer> deleteMajorInfo(@RequestParam Integer majorId) {
+        ClassInfoQuery classQuery = new ClassInfoQuery();
+        classQuery.setMajorId(majorId);
+        Integer count = classInfoService.findCountByParam(classQuery);
+        if (count != null && count > 0) {
+            throw new BusinessException("该专业下存在班级，无法删除");
+        }
         Integer result = majorInfoService.deleteMajorInfoByMajorId(majorId);
         return getSuccessResponseVO(result);
     }

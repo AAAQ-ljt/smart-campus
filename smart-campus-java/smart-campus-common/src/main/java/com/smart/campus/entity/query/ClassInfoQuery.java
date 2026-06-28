@@ -34,6 +34,11 @@ public class ClassInfoQuery extends BaseParam {
 	private Integer majorId;
 
 	/**
+	 * 所属院系ID（用于联表筛选）
+	 */
+	private Integer facultyId;
+
+	/**
 	 * 年级（如 2024）
 	 */
 	private String grade;
@@ -108,6 +113,14 @@ public class ClassInfoQuery extends BaseParam {
 
 	public Integer getMajorId(){
 		return this.majorId;
+	}
+
+	public void setFacultyId(Integer facultyId){
+		this.facultyId = facultyId;
+	}
+
+	public Integer getFacultyId(){
+		return this.facultyId;
 	}
 
 	public void setGrade(String grade){
