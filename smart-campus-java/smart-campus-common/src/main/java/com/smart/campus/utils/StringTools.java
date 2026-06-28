@@ -2,9 +2,17 @@ package com.smart.campus.utils;
 import com.smart.campus.exception.BusinessException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.UUID;
 
 
 public class StringTools {
+
+    /**
+     * 生成32位UUID（去除横线），用于非自增主键的表
+     */
+    public static String getUUID() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
 
     public static void checkParam(Object param) {
         try {

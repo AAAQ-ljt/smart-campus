@@ -1,136 +1,162 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BaseDataTable from '@/components/BaseDataTable.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
+import { loadFacultyInfoList, addFacultyInfo, updateFacultyInfo, deleteFacultyInfo, sortFacultyInfo } from '@/api/faculty'
 
 defineOptions({ name: 'Department' })
 
-const departmentNames = [
-  '计算机科学与技术学院', '数学与统计学院', '物理与电子工程学院', '化学与材料科学学院',
-  '生命科学学院', '地理与环境科学学院', '经济管理学院', '法学院',
-  '马克思主义学院', '教育学院', '体育学院', '文学院',
-  '外国语学院', '历史文化学院', '哲学与社会学学院', '音乐学院',
-  '美术学院', '新闻与传播学院', '心理学院', '国际文化交流学院'
-]
-
-const deanNames = [
-  '张明远', '李翰林', '王启航', '赵志强', '陈建国',
-  '刘宏伟', '周文博', '吴思远', '郑文华', '钱学民',
-  '孙立新', '朱文杰', '马建军', '胡志明', '林国栋',
-  '何建华', '郭振华', '杨志刚', '黄建平', '许文远'
-]
-
-function randomDate() {
-  const start = new Date(2023, 0, 1).getTime()
-  const end = new Date(2026, 5, 28).getTime()
-  const d = new Date(start + Math.random() * (end - start))
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  const h = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
-  const s = String(d.getSeconds()).padStart(2, '0')
-  return `${y}-${m}-${day} ${h}:${min}:${s}`
-}
-
-const allData = Array.from({ length: 200 }, (_, i) => ({
-  id: i + 1,
-  name: departmentNames[i % departmentNames.length] + (i >= departmentNames.length ? `（${Math.floor(i / departmentNames.length) + 1}）` : ''),
-  code: 'DEP' + String(i + 1).padStart(3, '0'),
-  dean: deanNames[i % deanNames.length],
-  createTime: randomDate(),
-  status: i % 7 === 0 ? '禁用' : '启用'
-}))
-
 const columns = [
-  { prop: 'id', label: '序号', width: 80, align: 'center' },
-  { prop: 'name', label: '院系名称', minWidth: 180 },
-  { prop: 'code', label: '院系编码', width: 120, align: 'center' },
-  { prop: 'dean', label: '院系负责人', width: 120, align: 'center' },
+  { prop: 'facultyName', label: '院系名称', minWidth: 200 },
+  { prop: 'facultyCode', label: '院系编码', width: 140, align: 'center' },
+  { prop: 'description', label: '院系描述', minWidth: 220 },
   { prop: 'createTime', label: '创建时间', width: 180, align: 'center' },
-  { prop: 'status', label: '状态', width: 90, align: 'center' },
   { prop: 'operation', label: '操作', width: 150, fixed: 'right', align: 'center' }
 ]
 
+const searchFormRef = ref(null)
+
 const searchForm = ref({
   name: '',
-  code: '',
-  status: ''
+  code: ''
 })
 
-const pageNo = ref(1)
-const pageSize = ref(15)
-
-const paginatedList = computed(() => {
-  let filtered = allData
-  if (searchForm.value.name) {
-    filtered = filtered.filter((d) => d.name.includes(searchForm.value.name))
-  }
-  if (searchForm.value.code) {
-    filtered = filtered.filter((d) => d.code.includes(searchForm.value.code))
-  }
-  if (searchForm.value.status) {
-    filtered = filtered.filter((d) => d.status === searchForm.value.status)
-  }
-  const start = (pageNo.value - 1) * pageSize.value
-  return filtered.slice(start, start + pageSize.value)
-})
-
-const totalCount = computed(() => {
-  let filtered = allData
-  if (searchForm.value.name) filtered = filtered.filter((d) => d.name.includes(searchForm.value.name))
-  if (searchForm.value.code) filtered = filtered.filter((d) => d.code.includes(searchForm.value.code))
-  if (searchForm.value.status) filtered = filtered.filter((d) => d.status === searchForm.value.status)
-  return filtered.length
-})
+const allData = ref([])
+const loading = ref(false)
 
 const tableData = computed(() => ({
-  totalCount: totalCount.value,
-  pageSize: pageSize.value,
-  pageNo: pageNo.value,
-  pageTotal: Math.ceil(totalCount.value / pageSize.value),
-  list: paginatedList.value
+  totalCount: allData.value.length,
+  pageSize: allData.value.length,
+  pageNo: 1,
+  pageTotal: 1,
+  list: allData.value
 }))
 
-function handlePageChange({ pageNo: p, pageSize: s }) {
-  pageNo.value = p
-  pageSize.value = s
+async function fetchList(params) {
+  loading.value = true
+  try {
+    const query = {}
+    if (params) {
+      if (params.name) query.facultyNameFuzzy = params.name
+      if (params.code) query.facultyCodeFuzzy = params.code
+    }
+    const res = await loadFacultyInfoList(query)
+    if (res.status === 'success') {
+      allData.value = res.data || []
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
 function handleSearch() {
-  pageNo.value = 1
+  fetchList({ name: searchForm.value.name, code: searchForm.value.code })
 }
 
 function handleReset() {
-  searchForm.value = { name: '', code: '', status: '' }
-  pageNo.value = 1
-}
-
-function handleEdit(row) {
-  ElMessage.info(`编辑：${row.name}`)
-}
-
-function handleDelete(row) {
-  ElMessageBox.confirm(`确定要删除院系「${row.name}」吗？`, '删除确认', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    ElMessage.success('删除成功')
-  }).catch(() => {})
+  searchForm.value = { name: '', code: '' }
+  fetchList()
 }
 
 const dialogVisible = ref(false)
+const isEdit = ref(false)
+const currentRow = ref(null)
+
+const formData = ref({
+  facultyName: '',
+  facultyCode: '',
+  description: ''
+})
 
 function handleAdd() {
+  isEdit.value = false
+  formData.value = { facultyName: '', facultyCode: '', description: '' }
   dialogVisible.value = true
 }
 
-function handleDialogConfirm() {
-  ElMessage.success('新增成功')
-  dialogVisible.value = false
+function handleEdit(row) {
+  isEdit.value = true
+  currentRow.value = row
+  formData.value = {
+    facultyName: row.facultyName || '',
+    facultyCode: row.facultyCode || '',
+    description: row.description || ''
+  }
+  dialogVisible.value = true
 }
+
+async function handleDialogConfirm() {
+  if (!formData.value.facultyName || !formData.value.facultyCode) {
+    ElMessage.warning('请填写院系名称和院系编码')
+    return
+  }
+  loading.value = true
+  try {
+    if (isEdit.value) {
+      await updateFacultyInfo({
+        facultyId: currentRow.value.facultyId,
+        ...formData.value
+      })
+      ElMessage.success('编辑成功')
+    } else {
+      await addFacultyInfo(formData.value)
+      ElMessage.success('新增成功')
+    }
+    dialogVisible.value = false
+    await fetchList()
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleDelete(row) {
+  ElMessageBox.confirm(`确定要删除院系「${row.facultyName}」吗？`, '删除确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    loading.value = true
+    try {
+      await deleteFacultyInfo(row.facultyId)
+      ElMessage.success('删除成功')
+      await fetchList()
+    } finally {
+      loading.value = false
+    }
+  }).catch(() => {})
+}
+
+async function handleRowDrag(list) {
+  allData.value = list
+  const ids = list.map((item) => item.facultyId)
+  try {
+    await sortFacultyInfo(ids)
+  } catch {
+    ElMessage.error('排序保存失败')
+    await fetchList()
+  }
+}
+
+function handleDrop(row, targetRow, position) {
+  const list = [...allData.value]
+  const fromIndex = list.findIndex((item) => item.facultyId === row.facultyId)
+  let toIndex = list.findIndex((item) => item.facultyId === targetRow.facultyId)
+  if (fromIndex === -1 || toIndex === -1) return
+  if (position === 'after') toIndex++
+  if (fromIndex < toIndex) toIndex--
+  const moved = list.splice(fromIndex, 1)[0]
+  list.splice(toIndex, 0, moved)
+  allData.value = list
+  handleRowDrag(list)
+}
+
+onMounted(() => {
+  fetchList()
+  if (searchFormRef.value?.$el) {
+    searchFormRef.value.$el.addEventListener('submit', (e) => e.preventDefault())
+  }
+})
 </script>
 
 <template>
@@ -140,18 +166,12 @@ function handleDialogConfirm() {
     <!-- 搜索卡片 -->
     <div class="search-card">
       <div class="search-card-row">
-        <el-form :model="searchForm" inline>
+        <el-form ref="searchFormRef" :model="searchForm" inline>
           <el-form-item label="院系名称">
-            <el-input v-model="searchForm.name" placeholder="请输入院系名称" clearable style="width: 180px" />
+            <el-input v-model="searchForm.name" placeholder="请输入院系名称" clearable style="width: 180px" @keyup.enter="handleSearch" />
           </el-form-item>
           <el-form-item label="院系编码">
-            <el-input v-model="searchForm.code" placeholder="请输入院系编码" clearable style="width: 180px" />
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 140px" @change="handleSearch">
-              <el-option label="启用" value="启用" />
-              <el-option label="禁用" value="禁用" />
-            </el-select>
+            <el-input v-model="searchForm.code" placeholder="请输入院系编码" clearable style="width: 180px" @keyup.enter="handleSearch" />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
@@ -167,14 +187,12 @@ function handleDialogConfirm() {
       <BaseDataTable
         :columns="columns"
         :data="tableData"
-        show-selection
-        @page-change="handlePageChange"
+        :show-pagination="false"
+        :loading="loading"
+        draggable
+        row-key="facultyId"
+        @row-drag="handleRowDrag"
       >
-        <template #status="{ row }">
-          <el-tag :type="row.status === '启用' ? 'success' : 'danger'">
-            {{ row.status }}
-          </el-tag>
-        </template>
         <template #operation="{ row }">
           <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
           <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
@@ -182,23 +200,17 @@ function handleDialogConfirm() {
       </BaseDataTable>
     </div>
 
-    <!-- 新增弹窗 -->
-    <BaseDialog v-model="dialogVisible" title="新增院系" width="520px" @confirm="handleDialogConfirm">
-      <el-form label-width="100px">
-        <el-form-item label="院系名称">
-          <el-input placeholder="请输入院系名称" />
+    <!-- 新增/编辑弹窗 -->
+    <BaseDialog v-model="dialogVisible" :title="isEdit ? '编辑院系' : '新增院系'" width="520px" @confirm="handleDialogConfirm">
+      <el-form label-width="100px" @submit.prevent>
+        <el-form-item label="院系名称" required>
+          <el-input v-model="formData.facultyName" placeholder="请输入院系名称" />
         </el-form-item>
-        <el-form-item label="院系编码">
-          <el-input placeholder="请输入院系编码" />
+        <el-form-item label="院系编码" required>
+          <el-input v-model="formData.facultyCode" placeholder="请输入院系编码" />
         </el-form-item>
-        <el-form-item label="院系负责人">
-          <el-input placeholder="请输入院系负责人姓名" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select style="width: 100%" placeholder="请选择状态">
-            <el-option label="启用" value="启用" />
-            <el-option label="禁用" value="禁用" />
-          </el-select>
+        <el-form-item label="院系描述">
+          <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入院系描述" />
         </el-form-item>
       </el-form>
     </BaseDialog>

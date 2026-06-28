@@ -119,6 +119,9 @@
 
 	<!-- 插入 （匹配有值的字段）-->
 	<insert id="insert" parameterType="com.smart.campus.entity.po.PaperInfo">
+		<selectKey keyProperty="bean.paperId" resultType="String" order="BEFORE">
+			SELECT REPLACE(UUID(), '-', '')
+		</selectKey>
 		 INSERT INTO paper_info
 		 <trim prefix="(" suffix=")" suffixOverrides="," >
 			<if test="bean.paperId != null">

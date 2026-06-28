@@ -142,7 +142,7 @@ function handleDrawerConfirm() {
     <!-- 搜索卡片 -->
     <div class="search-card">
       <div class="search-card-row">
-        <el-form :model="searchForm" inline>
+        <el-form :model="searchForm" inline @submit.prevent>
           <el-form-item label="专业名称">
             <el-input v-model="searchForm.name" placeholder="请输入专业名称" clearable style="width: 180px" />
           </el-form-item>
@@ -191,7 +191,7 @@ function handleDrawerConfirm() {
 
     <!-- 新增抽屉 -->
     <BaseDrawer v-model="drawerVisible" title="新增专业" size="520px" @confirm="handleDrawerConfirm">
-      <el-form label-width="80px">
+      <el-form label-width="80px" @submit.prevent>
         <el-form-item label="专业名称">
           <el-input placeholder="请输入专业名称" />
         </el-form-item>

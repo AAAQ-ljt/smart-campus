@@ -1,40 +1,23 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import Sortable from 'sortablejs'
+import sortIcon from '@/assets/icon/分类.svg'
 
 defineOptions({ name: 'BaseDataTable' })
 
 const props = defineProps({
-  columns: {
-    type: Array,
-    required: true
-  },
-  data: {
-    type: Object,
-    required: true
-  },
-  border: {
-    type: Boolean,
-    default: false
-  },
-  showSelection: {
-    type: Boolean,
-    default: false
-  },
-  loading: {
-    type: Boolean,
-    default: false
-  },
-  rowKey: {
-    type: String,
-    default: 'id'
-  },
-  size: {
-    type: String,
-    default: 'default'
-  }
+  columns: { type: Array, required: true },
+  data: { type: Object, required: true },
+  border: { type: Boolean, default: false },
+  showSelection: { type: Boolean, default: false },
+  loading: { type: Boolean, default: false },
+  rowKey: { type: String, default: 'id' },
+  size: { type: String, default: 'default' },
+  draggable: { type: Boolean, default: false },
+  showPagination: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['page-change', 'selection-change'])
+const emit = defineEmits(['page-change', 'selection-change', 'row-drag'])
 
 const rootRef = ref(null)
 const tableWrapRef = ref(null)
@@ -42,24 +25,61 @@ const tableRef = ref(null)
 const tableHeight = ref(400)
 
 let resizeObserver = null
+let sortable = null
 
 function calcHeight() {
   if (!tableWrapRef.value) return
   tableHeight.value = tableWrapRef.value.clientHeight
 }
 
+function initSortable() {
+  if (!props.draggable) return
+  nextTick(() => {
+    const el = tableRef.value?.$el?.querySelector('.el-table__body-wrapper tbody')
+    if (!el) return
+    sortable = Sortable.create(el, {
+      handle: '.drag-handle',
+      animation: 150,
+      onEnd(evt) {
+        const list = [...props.data.list]
+        const moved = list.splice(evt.oldIndex, 1)[0]
+        list.splice(evt.newIndex, 0, moved)
+        emit('row-drag', list)
+      }
+    })
+  })
+}
+
+function destroySortable() {
+  sortable?.destroy()
+  sortable = null
+}
+
+watch(() => props.draggable, (val) => {
+  if (val) {
+    initSortable()
+  } else {
+    destroySortable()
+  }
+})
+
+watch(() => props.data.list, () => {
+  nextTick(() => {
+    destroySortable()
+    initSortable()
+  })
+})
+
 onMounted(() => {
   calcHeight()
-  resizeObserver = new ResizeObserver(() => {
-    calcHeight()
-  })
-  if (tableWrapRef.value) {
-    resizeObserver.observe(tableWrapRef.value)
-  }
+  resizeObserver = new ResizeObserver(() => calcHeight())
+  if (tableWrapRef.value) resizeObserver.observe(tableWrapRef.value)
+  initSortable()
 })
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
+  destroySortable()
 })
 
 const innerPageNo = ref(props.data.pageNo)
@@ -100,12 +120,23 @@ defineExpose({ clearSelection })
         :border="border"
         :height="tableHeight"
         :row-key="rowKey"
-        :default-expand-all="true"
         v-loading="loading"
         :size="size"
         style="width: 100%"
         @selection-change="handleSelectionChange"
       >
+        <el-table-column
+          v-if="draggable"
+          width="44"
+          fixed="left"
+          align="center"
+          class-name="drag-column"
+        >
+          <template #default>
+            <img :src="sortIcon" class="drag-handle" alt="拖拽排序" />
+          </template>
+        </el-table-column>
+
         <el-table-column
           v-if="showSelection"
           type="selection"
@@ -132,7 +163,7 @@ defineExpose({ clearSelection })
         </el-table-column>
       </el-table>
     </div>
-    <div class="pagination-wrap">
+    <div v-if="showPagination" class="pagination-wrap">
       <el-pagination
         v-model:current-page="innerPageNo"
         v-model:page-size="innerPageSize"
@@ -165,5 +196,16 @@ defineExpose({ clearSelection })
   justify-content: flex-end;
   padding: 12px 0 0;
   flex-shrink: 0;
+}
+
+.drag-handle {
+  width: 16px;
+  height: 16px;
+  cursor: grab;
+  vertical-align: middle;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 </style>

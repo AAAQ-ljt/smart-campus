@@ -117,6 +117,9 @@
 
 	<!-- 插入 （匹配有值的字段）-->
 	<insert id="insert" parameterType="com.smart.campus.entity.po.CourseInfo">
+		<selectKey keyProperty="bean.courseId" resultType="String" order="BEFORE">
+			SELECT REPLACE(UUID(), '-', '')
+		</selectKey>
 		 INSERT INTO course_info
 		 <trim prefix="(" suffix=")" suffixOverrides="," >
 			<if test="bean.courseId != null">

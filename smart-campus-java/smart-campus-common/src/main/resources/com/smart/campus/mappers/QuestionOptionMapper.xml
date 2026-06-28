@@ -82,6 +82,9 @@
 
 	<!-- 插入 （匹配有值的字段）-->
 	<insert id="insert" parameterType="com.smart.campus.entity.po.QuestionOption">
+		<selectKey keyProperty="bean.optionId" resultType="String" order="BEFORE">
+			SELECT REPLACE(UUID(), '-', '')
+		</selectKey>
 		 INSERT INTO question_option
 		 <trim prefix="(" suffix=")" suffixOverrides="," >
 			<if test="bean.optionId != null">
