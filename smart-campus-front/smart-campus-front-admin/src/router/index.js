@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getToken } from '@/utils/token'
 
 import Dashboard from '@/views/home/Dashboard.vue'
 import Department from '@/views/basicData/Department.vue'
@@ -14,7 +15,14 @@ import Exam from '@/views/teaching/Exam.vue'
 import Notice from '@/views/system/Notice.vue'
 import Permission from '@/views/system/Permission.vue'
 
+const Login = () => import('@/views/login/Login.vue')
+const Register = () => import('@/views/login/Register.vue')
+
+const REDIRECT_KEY = 'loginRedirect'
+
 const routes = [
+  { path: '/account/login', component: Login, meta: { needLogin: false } },
+  { path: '/account/register', component: Register, meta: { needLogin: false } },
   { path: '/', redirect: '/home/dashboard' },
   {
     path: '/home/dashboard',
@@ -88,4 +96,18 @@ const router = createRouter({
   routes
 })
 
+router.beforeEach((to) => {
+  const token = getToken()
+  const accountPaths = ['/account/login', '/account/register']
+  if (accountPaths.includes(to.path)) {
+    return token ? '/' : true
+  }
+  if (!token) {
+    sessionStorage.setItem(REDIRECT_KEY, to.fullPath)
+    return '/account/login'
+  }
+  return true
+})
+
+export { REDIRECT_KEY }
 export default router

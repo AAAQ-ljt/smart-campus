@@ -623,3 +623,9 @@ INSERT INTO `class_info` (`class_name`, `class_code`, `major_id`, `grade`, `desc
 --   班级: 107 (24级) + 86 (23/25级) = 193 个
 --   覆盖总招生计划: 4300+ 人
 -- ============================================================
+
+-- ============================================================
+-- 系统管理员账号
+-- ============================================================
+INSERT INTO `user_info` (`user_no`, `password`, `real_name`, `role_type`, `status`, `create_time`) VALUES
+('admin', 'e10adc3949ba59abbe56e057f20f883e', '管理员账号admin', 'admin', 1, NOW());

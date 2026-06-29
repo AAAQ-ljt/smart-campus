@@ -2,9 +2,13 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { menuConfig } from '@/router/menu'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
+
+const isLoginPage = computed(() => route.path === '/account/login' || route.path === '/account/register')
 
 const activePrimary = computed(() => {
   const path = route.path
@@ -37,72 +41,73 @@ function isSecondaryActive(path) {
 function handleSecondaryClick(item) {
   router.push(item.path)
 }
+
+async function handleLogout() {
+  await userStore.logout()
+  router.push('/account/login')
+}
 </script>
 
 <template>
-  <div class="framework">
-    <!-- 顶部导航 -->
-    <header class="header">
-      <div class="header-left">
-        <div class="logo">
-          <el-icon :size="24" color="#2b7be4"><School /></el-icon>
+  <template v-if="isLoginPage">
+    <router-view />
+  </template>
+  <template v-else>
+    <div class="framework">
+      <header class="header">
+        <div class="header-left">
+          <div class="logo">
+            <el-icon :size="24" color="#2b7be4"><School /></el-icon>
+          </div>
+          <span class="project-name">智慧校园后台</span>
         </div>
-        <span class="project-name">智慧校园后台</span>
-      </div>
-
-      <nav class="header-nav">
-        <div
-          v-for="item in menuConfig"
-          :key="item.code"
-          class="nav-item"
-          :class="{ active: activePrimary === item.code }"
-          @click="handlePrimaryClick(item)"
-        >
-          {{ item.name }}
-        </div>
-      </nav>
-
-      <div class="header-right">
-        <el-dropdown trigger="click">
-          <span class="user-info">
-            <el-icon :size="18"><UserFilled /></el-icon>
-            <span class="username">管理员</span>
-            <el-icon :size="12"><ArrowDown /></el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item>个人设置</el-dropdown-item>
-              <el-dropdown-item divided>退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
-    </header>
-
-    <!-- 主体区域 -->
-    <div class="main-area">
-      <!-- 左侧二级菜单卡片 -->
-      <aside class="sidebar-card">
-        <div class="sidebar-title">{{ currentMenuName }}</div>
-        <div class="sidebar-menu">
+        <nav class="header-nav">
           <div
-            v-for="item in secondaryMenus"
+            v-for="item in menuConfig"
             :key="item.code"
-            class="menu-item"
-            :class="{ active: isSecondaryActive(item.path) }"
-            @click="handleSecondaryClick(item)"
+            class="nav-item"
+            :class="{ active: activePrimary === item.code }"
+            @click="handlePrimaryClick(item)"
           >
             {{ item.name }}
           </div>
+        </nav>
+        <div class="header-right">
+          <el-dropdown trigger="click">
+            <span class="user-info">
+              <el-icon :size="18"><UserFilled /></el-icon>
+              <span class="username">{{ userStore.userInfo?.realName || '管理员' }}</span>
+              <el-icon :size="12"><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
-      </aside>
-
-      <!-- 右侧内容区域卡片 -->
-      <section class="content-card">
-        <router-view />
-      </section>
+      </header>
+      <div class="main-area">
+        <aside class="sidebar-card">
+          <div class="sidebar-title">{{ currentMenuName }}</div>
+          <div class="sidebar-menu">
+            <div
+              v-for="item in secondaryMenus"
+              :key="item.code"
+              class="menu-item"
+              :class="{ active: isSecondaryActive(item.path) }"
+              @click="handleSecondaryClick(item)"
+            >
+              {{ item.name }}
+            </div>
+          </div>
+        </aside>
+        <section class="content-card">
+          <router-view />
+        </section>
+      </div>
     </div>
-  </div>
+  </template>
 </template>
 
 <style scoped>

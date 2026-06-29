@@ -33,7 +33,7 @@ request.interceptors.response.use(
       if (status === 401) {
         removeToken()
         const redirect = encodeURIComponent(window.location.href)
-        window.location.href = `/login?redirect=${redirect}`
+        window.location.href = '/account/login'
         return Promise.reject(error)
       }
       ElMessage.error(error.response.data?.info || '网络错误')

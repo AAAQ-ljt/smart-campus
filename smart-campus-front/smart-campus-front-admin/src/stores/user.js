@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getToken, setToken, removeToken } from '@/utils/token'
 import { getAllMenuCodes } from '@/router/menu'
+import { logout as logoutApi } from '@/api/login'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref(getToken())
@@ -18,7 +19,8 @@ export const useUserStore = defineStore('user', () => {
     setToken(tokenVal)
   }
 
-  function logout() {
+  async function logout() {
+    try { await logoutApi() } catch {}
     token.value = ''
     userInfo.value = null
     removeToken()
