@@ -58,9 +58,9 @@ public class FFmpegUtil {
      */
     public static void generateCover(String sourcePath, String coverPath) {
         try {
-            // 先尝试第1秒
+            // 先尝试第1秒，-update 1 确保输出单张图片
             ProcessBuilder pb = new ProcessBuilder(
-                    FFMPEG_CMD, "-i", sourcePath, "-ss", "00:00:01", "-vframes", "1", coverPath, "-y"
+                    FFMPEG_CMD, "-i", sourcePath, "-ss", "00:00:01", "-frames:v", "1", "-update", "1", coverPath, "-y"
             );
             pb.redirectErrorStream(true);
             Process p = pb.start();
@@ -69,7 +69,7 @@ public class FFmpegUtil {
 
             // 失败则尝试第0秒
             if (!new File(coverPath).exists()) {
-                new ProcessBuilder(FFMPEG_CMD, "-i", sourcePath, "-ss", "00:00:00", "-vframes", "1", coverPath, "-y")
+                new ProcessBuilder(FFMPEG_CMD, "-i", sourcePath, "-ss", "00:00:00", "-frames:v", "1", "-update", "1", coverPath, "-y")
                         .redirectErrorStream(true).start().waitFor();
             }
         } catch (Exception e) {

@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BaseDataTable from '@/components/BaseDataTable.vue'
 import UploadPanel from '@/components/UploadPanel.vue'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import { loadResourceTree, loadResourceList, addResource, updateResource, deleteResource, sortResources, moveResource } from '@/api/resource'
 import { getToken } from '@/utils/token'
 import folderIcon from '@/assets/folder.png'
@@ -21,7 +22,7 @@ import moreIcon from '@/assets/icon/more.svg'
 defineOptions({ name: 'Resource' })
 
 const resourceTypeOptions = [
-  { value: null, label: '全部类型' },
+  { value: '', label: '全部类型' },
   { value: 1, label: '视频' },
   { value: 2, label: '图片' },
   { value: 3, label: '文档' },
@@ -42,7 +43,7 @@ const loading = ref(false)
 const searchFormRef = ref(null)
 const searchForm = ref({
   resourceName: '',
-  resourceType: null
+  resourceType: ''
 })
 
 function handleSearch() {
@@ -162,19 +163,8 @@ async function handleAddSubDir(parentData) {
   } catch { /* cancelled */ }
 }
 
-async function handleRenameDir(data) {
-  try {
-    const { value } = await ElMessageBox.prompt('请输入新名称', '重命名目录', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputValue: data.label,
-      inputValidator(val) { return val && val.trim() ? true : '目录名称不能为空' }
-    })
-    await updateResource({ resourceId: data.id, resourceName: value.trim() })
-    ElMessage.success('重命名成功')
-    await fetchTree()
-    await fetchList(currentDirId.value)
-  } catch { /* cancelled */ }
+function handleRenameDir(data) {
+  openRenameDialog({ resourceId: data.id, resourceName: data.label, nodeType: 1 })
 }
 
 async function handleDeleteDir(data) {
@@ -335,11 +325,29 @@ function getItemIcon(item) {
   // 可执行文件
   if (ext === '.exe') return exeIcon
 
-  // 图片类：jpg/png/gif/bmp/webp/svg 等
-  if (item.resourceType === 2) return genericFileIcon
+  // 图片类：成功处理后显示缩略图
+  if (item.resourceType === 2) {
+    if (item.status === 3 && item.resourceId) {
+      const token = getToken()
+      return `/api/resourceInfo/download/${item.resourceId}?token=${encodeURIComponent(token || '')}`
+    }
+    return genericFileIcon
+  }
 
   // 其他类型兜底
   return othersIcon
+}
+
+function getFallbackIcon(item) {
+  if (item.resourceType === 1) return videoIcon
+  if (item.resourceType === 2) return genericFileIcon
+  return othersIcon
+}
+
+function handleImagePreview(item) {
+  const token = getToken()
+  const url = `/api/resourceInfo/download/${item.resourceId}?token=${encodeURIComponent(token || '')}&view=true`
+  window.open(url, '_blank')
 }
 
 function getDisplayName(item) {
@@ -449,6 +457,17 @@ async function handleCreateDir() {
 const uploadPanelRef = ref(null)
 const fileInputRef = ref(null)
 
+// 视频播放
+const videoDialogVisible = ref(false)
+const videoResourceId = ref('')
+const videoTitle = ref('')
+
+// 重命名弹窗
+const renameVisible = ref(false)
+const renameItem = ref(null)
+const renameValue = ref('')
+const renameInputRef = ref(null)
+
 function handleUpload() {
   fileInputRef.value?.click()
 }
@@ -474,23 +493,45 @@ function handleTableRowClick(row) {
     currentDirId.value = row.resourceId
     pagination.value.pageNo = 1
     fetchList(row.resourceId)
+  } else if (row.resourceType === 1 && row.status === 3) {
+    videoResourceId.value = row.resourceId
+    videoTitle.value = row.originalName || row.resourceName
+    videoDialogVisible.value = true
   }
 }
 
-async function handleRename(item) {
-  const name = item.nodeType === 1 ? item.resourceName : (item.originalName || item.resourceName)
-  try {
-    const { value } = await ElMessageBox.prompt('请输入新名称', '重命名', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputValue: name,
-      inputValidator(val) { return val && val.trim() ? true : '名称不能为空' }
-    })
-    await updateResource({ resourceId: item.resourceId, resourceName: value.trim() })
-    ElMessage.success('重命名成功')
-    if (item.nodeType === 1) await fetchTree()
-    await fetchList(currentDirId.value)
-  } catch { /* cancelled */ }
+function getRenameBaseName(item) {
+  if (item.nodeType === 1) return item.resourceName
+  const name = item.originalName || item.resourceName
+  const ext = item.fileExt
+  if (ext && name.toLowerCase().endsWith(ext.toLowerCase())) {
+    return name.substring(0, name.length - ext.length)
+  }
+  return name
+}
+
+function getRenameExt(item) {
+  if (item.nodeType === 1) return ''
+  return item.fileExt || ''
+}
+
+function openRenameDialog(item) {
+  renameItem.value = item
+  renameValue.value = getRenameBaseName(item)
+  renameVisible.value = true
+  nextTick(() => renameInputRef.value?.focus())
+}
+
+async function handleRenameConfirm() {
+  const val = renameValue.value.trim()
+  if (!val) return
+  const ext = getRenameExt(renameItem.value)
+  const newName = ext ? val + ext : val
+  await updateResource({ resourceId: renameItem.value.resourceId, resourceName: newName })
+  ElMessage.success('重命名成功')
+  renameVisible.value = false
+  if (renameItem.value.nodeType === 1) await fetchTree()
+  await fetchList(currentDirId.value)
 }
 
 function handleDownload(file) {
@@ -639,7 +680,24 @@ onMounted(async () => {
             >
               <template #name="{ row }">
                 <div class="name-cell" :class="{ 'is-dir': row.nodeType === 1 }" @click="handleTableRowClick(row)">
-                  <img :src="getItemIcon(row)" class="name-icon" alt="" />
+                  <div class="name-icon-wrap">
+                    <img
+                      :src="getItemIcon(row)"
+                      class="name-icon"
+                      :class="{ 'name-icon-img': row.resourceType === 2 && row.status === 3 }"
+                      alt=""
+                      @error="e => e.target.src = getFallbackIcon(row)"
+                    />
+                    <i
+                      v-if="row.resourceType === 1 && row.status === 3"
+                      class="iconfont icon-play-cover play-overlay"
+                    ></i>
+                    <div
+                      v-if="row.resourceType === 2 && row.status === 3"
+                      class="preview-overlay"
+                      @click.stop="handleImagePreview(row)"
+                    ></div>
+                  </div>
                   <span class="name-text" :title="getDisplayName(row)">{{ getDisplayName(row) }}</span>
                 </div>
               </template>
@@ -667,7 +725,7 @@ onMounted(async () => {
               </template>
               <template #operation="{ row }">
                 <el-button type="primary" link size="small" @click="handleMove(row)">移动</el-button>
-                <el-button type="primary" link size="small" @click="handleRename(row)">重命名</el-button>
+                <el-button type="primary" link size="small" @click="openRenameDialog(row)">重命名</el-button>
                 <template v-if="row.nodeType === 2">
                   <el-button type="primary" link size="small" @click="handleDownload(row)">下载</el-button>
                 </template>
@@ -729,6 +787,27 @@ onMounted(async () => {
 
     <!-- 上传面板 -->
     <UploadPanel ref="uploadPanelRef" :parent-id="currentDirId" @upload-start="handleUploadStart" @upload-complete="handleUploadComplete" />
+
+    <!-- 视频播放弹窗 -->
+    <VideoPlayer v-model:visible="videoDialogVisible" :resource-id="videoResourceId" :title="videoTitle" />
+
+    <!-- 重命名弹窗 -->
+    <el-dialog v-model="renameVisible" title="重命名" width="420px" :close-on-click-modal="false" @keydown.enter="handleRenameConfirm">
+      <el-input
+        ref="renameInputRef"
+        v-model="renameValue"
+        placeholder="请输入新名称"
+        @keyup.enter="handleRenameConfirm"
+      >
+        <template v-if="renameItem && renameItem.nodeType === 2 && getRenameExt(renameItem)" #append>
+          {{ getRenameExt(renameItem) }}
+        </template>
+      </el-input>
+      <template #footer>
+        <el-button @click="renameVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleRenameConfirm">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -916,11 +995,52 @@ onMounted(async () => {
   color: #66b1ff;
 }
 
-.name-icon {
-  width: 24px;
-  height: 24px;
+.name-icon-wrap {
+  position: relative;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
-  object-fit: contain;
+}
+
+.name-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.name-icon-img {
+  border-radius: 4px;
+}
+
+.play-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+}
+
+.name-icon-wrap:hover .play-overlay,
+.name-icon-wrap:hover .preview-overlay {
+  opacity: 1;
 }
 
 .name-text {
@@ -978,5 +1098,12 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   font-size: 14px;
+}
+</style>
+
+<style>
+/* 图片预览遮罩层级高于上传面板 (z-2000) */
+.el-image-viewer__wrapper {
+  z-index: 3000 !important;
 }
 </style>

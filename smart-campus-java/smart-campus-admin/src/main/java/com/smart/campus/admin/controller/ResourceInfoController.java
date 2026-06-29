@@ -15,6 +15,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +31,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/resourceInfo")
 public class ResourceInfoController extends ABaseController {
+
+    private static final Logger log = LoggerFactory.getLogger(ResourceInfoController.class);
 
     @Resource
     private ResourceInfoService resourceInfoService;
@@ -143,6 +148,7 @@ public class ResourceInfoController extends ABaseController {
     @GetMapping("/download/{resourceId}")
     public void download(@PathVariable String resourceId,
                          @RequestParam String token,
+                         @RequestParam(required = false, defaultValue = "false") boolean view,
                          HttpServletResponse response) {
         // 手动校验 token（下载走浏览器默认行为，无法携带自定义 header）
         if (token == null || token.isEmpty() || redisComponent.getAdminLoginUserId(token) == null) {
@@ -156,8 +162,9 @@ public class ResourceInfoController extends ABaseController {
             return;
         }
 
-        Path filePath = Path.of(projectFolder, info.getResourcePath());
+        Path filePath = resolvePath(info.getResourcePath());
         if (!Files.exists(filePath)) {
+            log.warn("下载文件不存在: resourceId={}, path={}", resourceId, filePath);
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
@@ -165,9 +172,15 @@ public class ResourceInfoController extends ABaseController {
         String fileName = info.getOriginalName() != null ? info.getOriginalName() : info.getResourceName();
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
 
-        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName);
+        if (view) {
+            // 预览模式：根据扩展名设置 MIME，不设 Content-Disposition，浏览器内联显示
+            String mimeType = getMimeType(fileName);
+            response.setContentType(mimeType);
+        } else {
+            response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName);
+        }
         response.setContentLengthLong(filePath.toFile().length());
 
         try (OutputStream out = response.getOutputStream();
@@ -197,12 +210,14 @@ public class ResourceInfoController extends ABaseController {
 
         ResourceInfo info = resourceInfoService.getResourceInfoByResourceId(resourceId);
         if (info == null || info.getCoverUrl() == null) {
+            log.warn("封面获取失败: resourceId={}, coverUrl 为空", resourceId);
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
 
-        Path coverPath = Path.of(projectFolder, info.getCoverUrl());
+        Path coverPath = resolvePath(info.getCoverUrl());
         if (!Files.exists(coverPath)) {
+            log.warn("封面文件不存在: resourceId={}, path={}", resourceId, coverPath);
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
@@ -221,6 +236,71 @@ public class ResourceInfoController extends ABaseController {
         } catch (IOException e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * 视频文件服务（m3u8 索引 + ts 分片），统一入口避免 Spring PathPattern 对 .m3u8 的匹配问题
+     */
+    @GetMapping("/video/{resourceId}/{filename:.+}")
+    public void videoFile(@PathVariable String resourceId,
+                          @PathVariable String filename,
+                          @RequestParam String token,
+                          HttpServletResponse response) throws IOException {
+        if (token == null || token.isEmpty() || redisComponent.getAdminLoginUserId(token) == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        ResourceInfo info = resourceInfoService.getResourceInfoByResourceId(resourceId);
+        if (info == null || info.getResourcePath() == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        Path hlsDir = resolvePath(info.getResourcePath()).getParent().resolve("hls");
+        log.debug("视频请求: resourceId={}, filename={}, hlsDir={}", resourceId, filename, hlsDir);
+
+        if ("index.m3u8".equals(filename)) {
+            Path m3u8File = hlsDir.resolve(resourceId + ".m3u8");
+            if (!Files.exists(m3u8File)) {
+                log.warn("m3u8 文件不存在: resourceId={}, path={}", resourceId, m3u8File);
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            String content = Files.readString(m3u8File);
+            // 将 ts 引用从 {resourceId}_00001.ts 改写为 segment_00001.ts，并附带 token 参数
+            content = content.replace(resourceId + "_", "segment_");
+            content = content.replaceAll("(segment_\\d+\\.ts)", "$1?token=" + token);
+            response.setContentType("application/vnd.apple.mpegurl");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(content);
+            return;
+        }
+
+        if (filename.startsWith("segment_") && filename.endsWith(".ts")) {
+            // segment_00001.ts → {resourceId}_00001.ts
+            String tsFileName = filename.replace("segment_", resourceId + "_");
+            Path tsFile = hlsDir.resolve(tsFileName);
+            if (!Files.exists(tsFile)) {
+                log.warn("ts 文件不存在: resourceId={}, path={}", resourceId, tsFile);
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            response.setContentType("video/mp2t");
+            response.setContentLengthLong(tsFile.toFile().length());
+            try (OutputStream out = response.getOutputStream();
+                 InputStream in = Files.newInputStream(tsFile)) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+                out.flush();
+            }
+            return;
+        }
+
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
     }
 
     /**
@@ -279,6 +359,32 @@ public class ResourceInfoController extends ABaseController {
             current = parent != null ? parent.getParentId() : "0";
         }
         return false;
+    }
+
+    /**
+     * 解析存储路径为绝对路径（兼容旧的绝对路径和新的相对路径）
+     */
+    /**
+     * 根据文件名后缀返回 MIME 类型
+     */
+    private String getMimeType(String fileName) {
+        if (fileName == null) return MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        String name = fileName.toLowerCase();
+        if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
+        if (name.endsWith(".png")) return "image/png";
+        if (name.endsWith(".gif")) return "image/gif";
+        if (name.endsWith(".bmp")) return "image/bmp";
+        if (name.endsWith(".webp")) return "image/webp";
+        if (name.endsWith(".svg")) return "image/svg+xml";
+        if (name.endsWith(".pdf")) return "application/pdf";
+        return MediaType.APPLICATION_OCTET_STREAM_VALUE;
+    }
+
+    private Path resolvePath(String storedPath) {
+        if (storedPath == null || storedPath.isEmpty()) return null;
+        Path path = Path.of(storedPath);
+        if (path.isAbsolute()) return path;
+        return Path.of(projectFolder, storedPath);
     }
 
     private List<ResourceInfo> loadAllDirs() {

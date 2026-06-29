@@ -328,10 +328,13 @@ public class FileUploadServiceImpl implements FileUploadService {
     }
 
     /**
-     * 相对路径转为绝对路径（拼接 projectFolder）
+     * 转为绝对路径：已是绝对路径直接返回，否则拼接 projectFolder
      */
-    private String toAbsolutePath(String relativePath) {
-        return Path.of(projectFolder, relativePath).toString();
+    private String toAbsolutePath(String storedPath) {
+        if (storedPath == null || storedPath.isEmpty()) return storedPath;
+        Path path = Path.of(storedPath);
+        if (path.isAbsolute()) return storedPath;
+        return Path.of(projectFolder, storedPath).toString();
     }
 
     // ==================== 私有方法 ====================
@@ -355,10 +358,12 @@ public class FileUploadServiceImpl implements FileUploadService {
             Path rawFile = Path.of(finalDir, session.getOriginalName());
             Files.copy(Path.of(sourcePath), rawFile, StandardCopyOption.REPLACE_EXISTING);
 
-            // 更新数据库（存储相对路径）
+            // 更新数据库（存储相对路径，封面不存在则不设置）
             ResourceInfo updateBean = new ResourceInfo();
             updateBean.setResourcePath(toRelativePath(rawFile.toString()));
-            updateBean.setCoverUrl(toRelativePath(coverPath));
+            if (Files.exists(Path.of(coverPath))) {
+                updateBean.setCoverUrl(toRelativePath(coverPath));
+            }
             updateBean.setDuration(duration);
             updateBean.setStatus(hlsExit == 0 ? STATUS_SUCCESS : STATUS_FAILED);
             updateBean.setUpdateTime(new Date());
