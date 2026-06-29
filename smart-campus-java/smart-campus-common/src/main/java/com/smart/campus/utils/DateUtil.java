@@ -1,6 +1,9 @@
 package com.smart.campus.utils;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -8,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DateUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(DateUtil.class);
 
     private static final Object lockObj = new Object();
     private static Map<String, ThreadLocal<SimpleDateFormat>> sdfMap = new HashMap<String, ThreadLocal<SimpleDateFormat>>();
@@ -40,7 +45,7 @@ public class DateUtil {
         try {
             return getSdf(pattern).parse(dateStr);
         } catch (ParseException e) {
-            e.printStackTrace();
+            log.error("日期解析失败: pattern={}, dateStr={}", pattern, dateStr, e);
         }
         return new Date();
     }

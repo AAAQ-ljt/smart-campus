@@ -5,10 +5,21 @@ import com.smart.campus.entity.po.ResourceInfo;
 import com.smart.campus.entity.query.ResourceInfoQuery;
 import com.smart.campus.entity.vo.ResponseVO;
 import com.smart.campus.exception.BusinessException;
+import com.smart.campus.redis.RedisComponent;
+import com.smart.campus.service.FileUploadService;
 import com.smart.campus.service.ResourceInfoService;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -20,6 +31,15 @@ public class ResourceInfoController extends ABaseController {
 
     @Resource
     private ResourceInfoService resourceInfoService;
+
+    @Resource
+    private FileUploadService fileUploadService;
+
+    @Resource
+    private RedisComponent redisComponent;
+
+    @Value("${project.folder:./}")
+    private String projectFolder;
 
     /**
      * 加载完整目录树（仅目录节点）
@@ -108,7 +128,99 @@ public class ResourceInfoController extends ABaseController {
         }
 
         Integer result = resourceInfoService.deleteResourceInfoByResourceId(resourceId);
+
+        // 清理磁盘文件和 Redis 会话
+        if (current.getNodeType() != null && current.getNodeType() == 2) {
+            fileUploadService.cleanupResource(resourceId, current.getResourcePath());
+        }
+
         return getSuccessResponseVO(result);
+    }
+
+    /**
+     * 下载文件
+     */
+    @GetMapping("/download/{resourceId}")
+    public void download(@PathVariable String resourceId,
+                         @RequestParam String token,
+                         HttpServletResponse response) {
+        // 手动校验 token（下载走浏览器默认行为，无法携带自定义 header）
+        if (token == null || token.isEmpty() || redisComponent.getAdminLoginUserId(token) == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        ResourceInfo info = resourceInfoService.getResourceInfoByResourceId(resourceId);
+        if (info == null || info.getNodeType() == null || info.getNodeType() != 2) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        Path filePath = Path.of(projectFolder, info.getResourcePath());
+        if (!Files.exists(filePath)) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        String fileName = info.getOriginalName() != null ? info.getOriginalName() : info.getResourceName();
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName);
+        response.setContentLengthLong(filePath.toFile().length());
+
+        try (OutputStream out = response.getOutputStream();
+             InputStream in = Files.newInputStream(filePath)) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+            out.flush();
+        } catch (IOException e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * 获取视频封面图
+     */
+    @GetMapping("/cover/{resourceId}")
+    public void cover(@PathVariable String resourceId,
+                      @RequestParam String token,
+                      HttpServletResponse response) {
+        if (token == null || token.isEmpty() || redisComponent.getAdminLoginUserId(token) == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        ResourceInfo info = resourceInfoService.getResourceInfoByResourceId(resourceId);
+        if (info == null || info.getCoverUrl() == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        Path coverPath = Path.of(projectFolder, info.getCoverUrl());
+        if (!Files.exists(coverPath)) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        response.setContentType("image/jpeg");
+        response.setContentLengthLong(coverPath.toFile().length());
+
+        try (OutputStream out = response.getOutputStream();
+             InputStream in = Files.newInputStream(coverPath)) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+            out.flush();
+        } catch (IOException e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**

@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BaseDataTable from '@/components/BaseDataTable.vue'
+import UploadPanel from '@/components/UploadPanel.vue'
 import { loadResourceTree, loadResourceList, addResource, updateResource, deleteResource, sortResources, moveResource } from '@/api/resource'
+import { getToken } from '@/utils/token'
 import folderIcon from '@/assets/folder.png'
 import videoIcon from '@/assets/video.png'
 import wordIcon from '@/assets/word.png'
@@ -13,6 +15,7 @@ import zipIcon from '@/assets/zip.png'
 import txtIcon from '@/assets/txt.png'
 import othersIcon from '@/assets/others.png'
 import genericFileIcon from '@/assets/ic_file2.png'
+import exeIcon from '@/assets/exe.png'
 import moreIcon from '@/assets/icon/more.svg'
 
 defineOptions({ name: 'Resource' })
@@ -28,6 +31,7 @@ const resourceTypeOptions = [
 
 const resourceTypeMap = { 1: '视频', 2: '图片', 3: '文档', 4: '压缩包', 5: '其他' }
 const statusMap = { 1: '上传中', 2: '转码中', 3: '上传成功', 4: '转码失败', 5: '上传失败' }
+const statusTipMap = { 1: '文件正在上传中，请耐心等待', 2: '文件已上传，正在转码处理中', 3: '', 4: '视频转码过程出错，请检查文件格式后重新上传', 5: '文件上传过程中断或出错，请重新上传' }
 
 // ==================== Data ====================
 const allDirs = ref([])
@@ -308,20 +312,38 @@ async function handleBatchDelete() {
 function getItemIcon(item) {
   if (item.nodeType === 1) return folderIcon
   const ext = item.fileExt?.toLowerCase()
-  if (item.resourceType === 1) return videoIcon
+
+  // 视频：上传成功则显示封面，否则用默认视频图标
+  if (item.resourceType === 1) {
+    if (item.status === 3 && item.resourceId) {
+      const token = getToken()
+      return `/api/resourceInfo/cover/${item.resourceId}?token=${encodeURIComponent(token || '')}`
+    }
+    return videoIcon
+  }
+
+  // 文档类：按扩展名精确匹配
   if (ext === '.doc' || ext === '.docx') return wordIcon
   if (ext === '.pdf') return pdfIcon
   if (ext === '.ppt' || ext === '.pptx') return pptIcon
   if (ext === '.xls' || ext === '.xlsx') return excelIcon
-  if (ext === '.zip' || ext === '.rar' || ext === '.7z') return zipIcon
   if (ext === '.txt') return txtIcon
+
+  // 压缩包
+  if (ext === '.zip' || ext === '.rar' || ext === '.7z' || ext === '.tar' || ext === '.gz') return zipIcon
+
+  // 可执行文件
   if (ext === '.exe') return exeIcon
+
+  // 图片类：jpg/png/gif/bmp/webp/svg 等
   if (item.resourceType === 2) return genericFileIcon
+
+  // 其他类型兜底
   return othersIcon
 }
 
 function getDisplayName(item) {
-  return item.nodeType === 1 ? item.resourceName : (item.originalName || item.resourceName)
+  return item.resourceName || item.originalName || ''
 }
 
 function formatFileSize(bytes) {
@@ -424,8 +446,26 @@ async function handleCreateDir() {
   } catch { /* cancelled */ }
 }
 
+const uploadPanelRef = ref(null)
+const fileInputRef = ref(null)
+
 function handleUpload() {
-  ElMessage.info('上传资源功能开发中')
+  fileInputRef.value?.click()
+}
+
+function handleFileChange(e) {
+  const files = e.target.files
+  if (!files || files.length === 0) return
+  uploadPanelRef.value?.addFiles(files)
+  e.target.value = ''
+}
+
+function handleUploadStart() {
+  fetchList(currentDirId.value)
+}
+
+function handleUploadComplete() {
+  fetchList(currentDirId.value)
 }
 
 // ==================== Table Row Actions ====================
@@ -453,12 +493,19 @@ async function handleRename(item) {
   } catch { /* cancelled */ }
 }
 
-function handleReupload(file) {
-  ElMessage.info('重新上传：' + file.originalName + '（功能开发中）')
-}
-
 function handleDownload(file) {
-  ElMessage.info('下载：' + file.originalName + '（功能开发中）')
+  const token = getToken()
+  if (!token) {
+    ElMessage.error('登录已过期，请重新登录')
+    return
+  }
+  const url = `/api/resourceInfo/download/${file.resourceId}?token=${encodeURIComponent(token)}`
+  const a = document.createElement('a')
+  a.href = url
+  a.download = file.originalName || file.resourceName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
 }
 
 async function handleDeleteItem(item) {
@@ -610,6 +657,9 @@ onMounted(async () => {
               </template>
               <template #status="{ row }">
                 <template v-if="row.nodeType === 1">-</template>
+                <el-tooltip v-else-if="statusTipMap[row.status]" :content="statusTipMap[row.status]" placement="top">
+                  <el-tag size="small" :type="getStatusType(row.status)">{{ statusMap[row.status] || '未知' }}</el-tag>
+                </el-tooltip>
                 <el-tag v-else size="small" :type="getStatusType(row.status)">{{ statusMap[row.status] || '未知' }}</el-tag>
               </template>
               <template #updateTime="{ row }">
@@ -619,7 +669,6 @@ onMounted(async () => {
                 <el-button type="primary" link size="small" @click="handleMove(row)">移动</el-button>
                 <el-button type="primary" link size="small" @click="handleRename(row)">重命名</el-button>
                 <template v-if="row.nodeType === 2">
-                  <el-button type="warning" link size="small" @click="handleReupload(row)">重新上传</el-button>
                   <el-button type="primary" link size="small" @click="handleDownload(row)">下载</el-button>
                 </template>
                 <el-button type="danger" link size="small" @click="handleDeleteItem(row)">删除</el-button>
@@ -668,6 +717,18 @@ onMounted(async () => {
         <el-button type="primary" @click="handleMoveConfirm">确定移动</el-button>
       </template>
     </el-dialog>
+
+    <!-- 隐藏文件选择器 -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      multiple
+      style="display: none"
+      @change="handleFileChange"
+    />
+
+    <!-- 上传面板 -->
+    <UploadPanel ref="uploadPanelRef" :parent-id="currentDirId" @upload-start="handleUploadStart" @upload-complete="handleUploadComplete" />
   </div>
 </template>
 

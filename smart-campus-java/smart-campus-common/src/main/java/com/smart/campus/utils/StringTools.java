@@ -1,11 +1,16 @@
 package com.smart.campus.utils;
 import com.smart.campus.exception.BusinessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
 
 public class StringTools {
+
+    private static final Logger log = LoggerFactory.getLogger(StringTools.class);
 
     /**
      * 生成32位UUID（去除横线），用于非自增主键的表
@@ -34,7 +39,7 @@ public class StringTools {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("校验参数是否为空失败", e);
             throw new BusinessException("校验参数是否为空失败");
         }
     }

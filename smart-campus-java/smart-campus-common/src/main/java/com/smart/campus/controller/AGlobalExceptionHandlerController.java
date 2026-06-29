@@ -11,6 +11,7 @@ import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +19,16 @@ import jakarta.servlet.http.HttpServletRequest;
 public class AGlobalExceptionHandlerController extends ABaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(AGlobalExceptionHandlerController.class);
+
+    @ExceptionHandler(value = MaxUploadSizeExceededException.class)
+    Object handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e, HttpServletRequest request) {
+        logger.warn("上传文件大小超出限制: {}", e.getMessage());
+        ResponseVO responseVO = new ResponseVO();
+        responseVO.setCode(ResponseCodeEnum.CODE_600.getCode());
+        responseVO.setInfo("文件大小超出限制，系统最大支持1GB");
+        responseVO.setStatus(STATUC_ERROR);
+        return responseVO;
+    }
 
     @ExceptionHandler(value = Exception.class)
     Object handleException(Exception e, HttpServletRequest request) {
