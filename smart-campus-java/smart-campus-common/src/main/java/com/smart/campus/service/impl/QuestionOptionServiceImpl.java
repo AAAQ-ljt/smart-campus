@@ -127,4 +127,15 @@ public class QuestionOptionServiceImpl implements QuestionOptionService {
 	public Integer deleteQuestionOptionByOptionId(String optionId) {
 		return this.questionOptionMapper.deleteByOptionId(optionId);
 	}
+
+	/**
+	 * 根据QuestionId列表批量查询
+	 */
+	@Override
+	public List<QuestionOption> findByQuestionIds(List<String> questionIds) {
+		if (questionIds == null || questionIds.isEmpty()) {
+			return List.of();
+		}
+		return this.questionOptionMapper.selectByQuestionIds(questionIds);
+	}
 }

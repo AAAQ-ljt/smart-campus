@@ -69,4 +69,9 @@ public interface QuestionOptionService {
 	 */
 	Integer deleteQuestionOptionByOptionId(String optionId);
 
+	/**
+	 * 根据QuestionId列表批量查询
+	 */
+	List<QuestionOption> findByQuestionIds(List<String> questionIds);
+
 }

@@ -127,4 +127,15 @@ public class QuestionInfoServiceImpl implements QuestionInfoService {
 	public Integer deleteQuestionInfoByQuestionId(String questionId) {
 		return this.questionInfoMapper.deleteByQuestionId(questionId);
 	}
+
+	/**
+	 * 根据QuestionId列表批量查询
+	 */
+	@Override
+	public List<QuestionInfo> findByQuestionIds(List<String> questionIds) {
+		if (questionIds == null || questionIds.isEmpty()) {
+			return List.of();
+		}
+		return this.questionInfoMapper.selectByQuestionIds(questionIds);
+	}
 }

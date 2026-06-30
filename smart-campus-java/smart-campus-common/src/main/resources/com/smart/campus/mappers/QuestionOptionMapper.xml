@@ -284,4 +284,14 @@
 		select <include refid="base_column_list" /> from question_option q where option_id=#{optionId}
 	</select>
 
+	<!-- 根据QuestionId列表批量查询 -->
+	<select id="selectByQuestionIds" resultMap="base_result_map">
+		select <include refid="base_column_list" /> from question_option q
+		where q.question_id in
+		<foreach collection="questionIds" item="qid" open="(" separator="," close=")">
+			#{qid}
+		</foreach>
+		order by q.sort_order asc
+	</select>
+
 </mapper>

@@ -1,5 +1,6 @@
 package com.smart.campus.mappers;
 
+import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -24,5 +25,9 @@ public interface QuestionOptionMapper<T,P> extends BaseMapper<T,P> {
 	 */
 	 T selectByOptionId(@Param("optionId") String optionId);
 
+	/**
+	 * 根据QuestionId列表批量查询
+	 */
+	 List<T> selectByQuestionIds(@Param("questionIds") List<String> questionIds);
 
 }

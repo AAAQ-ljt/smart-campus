@@ -69,4 +69,9 @@ public interface QuestionInfoService {
 	 */
 	Integer deleteQuestionInfoByQuestionId(String questionId);
 
+	/**
+	 * 根据QuestionId列表批量查询
+	 */
+	List<QuestionInfo> findByQuestionIds(List<String> questionIds);
+
 }
